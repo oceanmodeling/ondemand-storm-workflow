@@ -5,6 +5,8 @@ set -e
 THIS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $THIS_SCRIPT_DIR/input.conf
 
+if [ $use_wwm == 1 ]; then hotstart_exec='pschism_WWM_PAHM_TVD-VL'; fi
+
 # PATH
 export PATH=$L_SCRIPT_DIR:$PATH
 
@@ -84,7 +86,7 @@ PREP_KWDS+=" --sample-rule $sample_rule"
 PREP_KWDS+=" --date-range-file $run_dir/setup/dates.csv"
 PREP_KWDS+=" --nwm-file $L_NWM_DATASET"
 PREP_KWDS+=" --tpxo-dir $L_TPXO_DATASET"
-# _use_if(param_wind_coupling, True, "--use-wwm"),
+if [ $use_wwm == 1 ]; then PREP_KWDS+=" --use-wwm"; fi
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \
