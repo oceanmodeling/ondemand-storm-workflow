@@ -67,6 +67,7 @@ def _plot_maxelev_diff(storm_tag, hgrid, schism_welev, schism_welev2, idry, bbox
     #
     DPI = kwargs.get('DPI', None)
     title_string = kwargs.get('title_string', None)
+    calculate_mean = kwargs.get('calculate_mean', None)
     save_file_name = kwargs.get('save_file_name', None)
 
     # Figure dpi resolution:
@@ -122,16 +123,17 @@ def _plot_maxelev_diff(storm_tag, hgrid, schism_welev, schism_welev2, idry, bbox
 
     gdf_countries.plot(color='lightgrey', ax=axis, zorder=-1)
 
-    iselect = np.where((idry==0))
-    diff = D2[iselect] - D1[iselect]
-    diff = diff*100/D1[iselect]
-    mean_percentage_increase = np.nanmean(diff)
-    _logger.info(f'mean_percentage_increase: {mean_percentage_increase:.2f}%')
-    print(mean_percentage_increase)
+    if calculate_mean is not None:
+        iselect = np.where((idry==0))
+        diff = D2[iselect] - D1[iselect]
+        diff = diff*100/D1[iselect]
+        mean_percentage_increase = np.nanmean(diff)
+        #_logger.info(f'mean_percentage_increase: {mean_percentage_increase:.2f}%')
+        print(mean_percentage_increase)
 
-    axis.annotate(f'Mean percentage increase: {mean_percentage_increase:.2f}%', 
-                  (lon_min+0.4, lat_max-0.25), 
-                  textcoords="offset points", xytext=(10,0), ha='center',fontsize=6)
+        axis.annotate(f'Mean percentage increase: {mean_percentage_increase:.2f}%',
+                      (lon_min+0.5, lat_max-0.25),
+                      textcoords="offset points", xytext=(10,0), ha='center',fontsize=6)
 
     xlim = [lon_min, lon_max] #axis.get_xlim()
     ylim = [lat_min, lat_max]#axis.get_ylim()
