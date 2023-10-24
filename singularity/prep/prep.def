@@ -25,9 +25,15 @@ From: continuumio/miniconda3:23.3.1-0-alpine
     conda run -n $ENV_NAME --no-capture-output \
         pip install "git+https://github.com/schism-dev/pyschism.git"
     conda run -n $ENV_NAME --no-capture-output \
-        pip install "coupledmodeldriver>=1.6.3"
+        pip install "coupledmodeldriver>=1.6.6"
     conda run -n $ENV_NAME --no-capture-output \
         pip install "ensembleperturbation>=1.1.2"
+
+    git clone https://github.com/schism-dev/schism
+    cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/Relocate/relocate_source_feeder.py /scripts
+    cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/feeder_heads_bases_v2.1.xy /refs
+#    cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/relocate_florence.reg /refs
+    rm -rfv schism
     
     conda clean --all && apk del git
     

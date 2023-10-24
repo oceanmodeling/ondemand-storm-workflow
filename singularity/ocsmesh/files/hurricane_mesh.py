@@ -540,6 +540,8 @@ if __name__ == '__main__':
     hurrmesh_client = HurricaneMesher(subparsers)
 
     args = parser.parse_args()
+    if 'outall' in args:
+        args.outall = True
 
     logger.info(f"Mesh arguments are {args}.")
 
