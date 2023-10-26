@@ -68,6 +68,7 @@ sbatch --wait --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsm
 
 
 echo "Download necessary data..."
+# TODO: Separate pairing NWM-elem from downloading!
 DOWNLOAD_KWDS=""
 if [ $hydrology == 1 ]; then DOWNLOAD_KWDS+=" --with-hydrology"; fi
 singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/prep.sif download_data \

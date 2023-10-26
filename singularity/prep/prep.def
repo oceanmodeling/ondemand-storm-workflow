@@ -1,6 +1,6 @@
 BootStrap: docker
 #From: centos:centos7.8.2003
-From: continuumio/miniconda3:23.3.1-0-alpine
+From: continuumio/miniconda3:23.5.2-0-alpine
 
 %files
     environment.yml 
@@ -20,14 +20,18 @@ From: continuumio/miniconda3:23.3.1-0-alpine
     conda install mamba -n base -c conda-forge 
     mamba update --name base --channel defaults conda 
     mamba env create -n $ENV_NAME --file /environment.yml
-    mamba clean --all --yes
 
     conda run -n $ENV_NAME --no-capture-output \
-        pip install "git+https://github.com/schism-dev/pyschism.git"
+        pip install "pyschism>=0.1.14"
     conda run -n $ENV_NAME --no-capture-output \
         pip install "coupledmodeldriver>=1.6.6"
     conda run -n $ENV_NAME --no-capture-output \
         pip install "ensembleperturbation>=1.1.2"
+    conda run -n $ENV_NAME --no-capture-output \
+        pip uninstall -y pygeos geopandas  # We use shapely 2
+
+    mamba install -y -n $ENV_NAME -cconda-forge \
+        --force-reinstall geopandas geopandas-base
 
     git clone https://github.com/schism-dev/schism
     cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/Relocate/relocate_source_feeder.py /scripts
@@ -35,7 +39,7 @@ From: continuumio/miniconda3:23.3.1-0-alpine
 #    cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/relocate_florence.reg /refs
     rm -rfv schism
     
-    conda clean --all && apk del git
+    mamba clean --all --yes && apk del git
     
     
 %runscript
