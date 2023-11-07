@@ -44,7 +44,7 @@ from relocate_source_feeder import (
 )
 
 
-REFS = Path('~').expanduser() / 'app/refs'
+REFS = Path('/refs')
 
 
 logger = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ from pyschism.mesh.gridgr3 import Gr3Field
 from pyschism.param.param import Param
 
 
-REFS = Path('~').expanduser() / 'app/refs'
+REFS = Path('/refs')
 
 def setup_wwm(mesh_file: Path, setup_dir: Path, ensemble: bool):
     '''Output is
