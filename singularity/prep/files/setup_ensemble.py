@@ -122,6 +122,7 @@ def main(args):
     hires_reg = args.hires_region
     use_wwm = args.use_wwm
     with_hydrology = args.with_hydrology
+    pahm_model = args.pahm_model
 
     workdir = out_dir
     mesh_file = mesh_dir / 'mesh_w_bdry.grd'
@@ -247,6 +248,7 @@ def main(args):
             interval_seconds=3600,
             nws=20,
             fort22_filename=workdir/'track_files'/'original.22',
+            attributes={'model': pahm_model}
         )
     )
 
@@ -353,6 +355,9 @@ def parse_arguments():
     )
     argument_parser.add_argument(
         "--with-hydrology", action="store_true"
+    )
+    argument_parser.add_argument(
+        "--pahm-model", choices=['gahm', 'symmetric'], default='gahm'
     )
 
     argument_parser.add_argument(

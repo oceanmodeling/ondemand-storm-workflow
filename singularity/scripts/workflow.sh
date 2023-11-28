@@ -93,6 +93,7 @@ PREP_KWDS+=" --nwm-file $L_NWM_DATASET"
 PREP_KWDS+=" --tpxo-dir $L_TPXO_DATASET"
 if [ $use_wwm == 1 ]; then PREP_KWDS+=" --use-wwm"; fi
 if [ $hydrology == 1 ]; then PREP_KWDS+=" --with-hydrology"; fi
+PREP_KWDS+=" --pahm-model $pahm_model"
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \

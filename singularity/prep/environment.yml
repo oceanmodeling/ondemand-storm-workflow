@@ -36,5 +36,6 @@ dependencies:
   - pytz
   - geoalchemy2
   - seawater
+  - xarray==2023.7.0
   - pip:
     - chaospy>=4.2.7
