@@ -21,6 +21,7 @@ from pyschism.mesh import Hgrid
 from stormevents import StormEvent
 
 
+#########################################################
 def get_storm_track_line(storm_track, advisory):
     for idx in storm_track.linestrings[advisory]:
         xy_line = storm_track.linestrings[advisory][idx].xy
@@ -90,7 +91,6 @@ def plot_scatter(df, save_dir):
     figure, axis = plt.subplots(1, 1)
     # figure.set_size_inches(12, 12/1.6)
 
-    # df.plot.scatter(x='elev_m', y='max_elev', ax=axis, s=13)
     plt.scatter(x=df['elev_m'], y=df['max_elev'], s=13, facecolors='none', edgecolors='b')
      
     xlim = axis.get_xlim()
@@ -100,6 +100,7 @@ def plot_scatter(df, save_dir):
     axis.set_xlim([ax_min, ax_max])
     axis.set_ylim([ax_min, ax_max])
     
+    # add linear fit line and coefficients 
     b, a = np.polyfit(df['elev_m'], df['max_elev'], 1)
     xline = np.linspace(ax_min+1, ax_max-1, num=10)
     axis.plot(xline, a + b * xline, color="k", lw=1);
@@ -108,28 +109,23 @@ def plot_scatter(df, save_dir):
               horizontalalignment='left', verticalalignment='center',
               transform=axis.transAxes, size=10)
     
+    # add dashed 1:1 line    
     axis.axline((ax_min,ax_min), (ax_max,ax_max), linestyle='--', color='grey')
+    
     axis.set_xlabel('USGS HWMs [m]')
     axis.set_ylabel('SCHISM max. elevation [m]')
-    
     axis.set_title(f'{df.eventName.values[0]}')
-    
     plt.savefig(os.path.join(save_dir, f'{df.eventName.values[0]}_scatter_HWM_vs_max_elev.png'))
 
     
 def plot_contour_vs_hwm(storm_track, hwm_points, triangles, max_elev, countries_map, save_dir):
     figure, axis = plt.subplots(1, 1)
     figure.set_size_inches(12, 12/1.6)
-    # best_track_plot_date = storm_track.start_date.isoformat().translate({ord(i): None for i in '-:'})
+
     track_line = get_storm_track_line(storm_track, 'BEST')
     
-    # Define the colors for positive and negative values
-    positive_color = 'red'
-    negative_color = 'blue'    
-
     # Create a colormap with red for positive and blue for negative values
     man_cmap = LinearSegmentedColormap.from_list('red_blue_colormap', ['white', 'blue', 'red'])
-                                                 # [negative_color, 'white', positive_color])
     
     step = 0.025  # m
     MinVal = 0.0 
@@ -161,23 +157,16 @@ def plot_contour_vs_hwm(storm_track, hwm_points, triangles, max_elev, countries_
     colorbar = plt.colorbar(
         ScalarMappable(
             norm=Normalize(
-                vmin=MinVal, #hwm_points['height_above_gnd'].min(),
-                vmax=MaxVal, #hwm_points['height_above_gnd'].max(),
+                vmin=MinVal, #hwm_points['elev_m'].min(),
+                vmax=MaxVal, #hwm_points['elev_m'].max(),
             ),
             cmap=man_cmap,
         ),extend='both', shrink=0.5,
     )
-# option 2    
-    # bounds = [0, 1, 2, 3, 4, 5, 6]
-    # norm = BoundaryNorm(bounds, man_cmap.N, extend='both')
-    # colorbar = plt.colorbar(ScalarMappable(norm=norm, cmap=man_cmap), shrink=0.5, extend='both') 
 
     colorbar.update_ticks()
     colorbar.set_label('[m]', rotation=270, labelpad=15)
     
-    # axis.plot(*storm_track.linestrings['BEST'][best_track_plot_date].xy, 
-    #           c='red', linestyle='dashed', 
-    #           label='BEST track', zorder=5)
     axis.plot(*track_line, c='black', linestyle='dashed', label='BEST track', zorder=15)
     
     countries_map.plot(color='lightgrey', ax=axis, zorder=-1)
@@ -203,21 +192,21 @@ def plot_contour_vs_hwm(storm_track, hwm_points, triangles, max_elev, countries_
 ###############################
 def main(args):
 
-    name_of_storm = args.storm_name.upper()
-    year_of_storm = args.storm_year
-    hgrid_directory = Path(args.grid_dir)
-    output_directory = Path(args.sim_dir)
-    save_directory = args.save_dir      
+    storm_name = args.storm_name.upper()
+    storm_year = args.storm_year
+    hgrid_dir = Path(args.hgrid_dir)
+    output_dir = Path(args.output_dir)
+    save_dir = args.save_dir      
        
-    hgrid_file_path = hgrid_directory / 'hgrid.gr3'
+    hgrid_file_path = hgrid_dir / 'hgrid.gr3'
     if not hgrid_file_path.exists():
         raise FileNotFoundError(f'{hgrid_file_path} was not found!')
            
-    output_path = output_directory / 'out2d_1.nc'
+    output_path = output_dir / 'out2d_1.nc'
     if not output_path.exists():
         raise FileNotFoundError(f"{output_path} was not found!")
 
-    print(f"{name_of_storm}_{year_of_storm}")
+    print(f"{storm_name}_{storm_year}")
     
     gdf_countries = gpd.GeoSeries(NaturalEarthFeature(category='physical', scale='10m', name='land').geometries(), crs=4326)
 
@@ -231,12 +220,12 @@ def main(args):
     mesh_poly = hgrid_file.hull().unary_union
 
     # Load storm and obtain isobars from stormevent
-    storm = StormEvent(name_of_storm, year_of_storm)
+    storm = StormEvent(storm_name, storm_year)
     storm_best_track = storm.track()
     
     # obtain HWMs, quality control, and select poins with fair or better quality within the mesh domain
     hwm = storm.flood_event.high_water_marks()
-    hwm_qc = hwm[hwm.hwm_quality_id<=3] # To select 1:Excellent, 2:Good, and 3: Fair ; (4:Poor, 5:Very Poor, 6:Unknown) 
+    # hwm_qc = hwm[hwm.hwm_quality_id<=3] # To select 1:Excellent, 2:Good, and 3: Fair ; (4:Poor, 5:Very Poor, 6:Unknown) 
     hwm_qc = hwm[hwm.verticalDatumName=='NAVD88'] 
     hwm_sel = hwm_qc[hwm_qc.intersects(mesh_poly)] # To keep points within the domain
     
@@ -251,8 +240,8 @@ def main(args):
     
     df_filter['max_elev'] = get_schism_max_elevation(ds_max_elev, stations_indices)
 
-    plot_contour_vs_hwm(storm_best_track, df_filter, tri, ds_max_elev, gdf_countries, save_directory)
-    plot_scatter(df_filter, save_directory)
+    plot_contour_vs_hwm(storm_best_track, df_filter, tri, ds_max_elev, gdf_countries, save_dir)
+    plot_scatter(df_filter, save_dir)
     
 
         
@@ -266,10 +255,10 @@ def entry():
         "--storm_year", help="year of the storm", type=int)
     
     parser.add_argument(
-        "--grid_dir", help="path to hgrid.gr3 file", type=str) 
+        "--hgrid_dir", help="path to hgrid.gr3 file", type=str) 
     
     parser.add_argument(
-        "--sim_dir", help="Path to SCHISM output directory", type=str)
+        "--output_dir", help="Path to SCHISM output directory", type=str)
     
     # optional    
     parser.add_argument(
