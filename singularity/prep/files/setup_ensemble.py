@@ -10,6 +10,7 @@ from pathlib import Path
 
 import f90nml
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from coupledmodeldriver import Platform
 from coupledmodeldriver.configure.forcings.base import TidalSource
@@ -21,28 +22,93 @@ from coupledmodeldriver.configure import (
 from coupledmodeldriver.generate import SCHISMRunConfiguration
 from coupledmodeldriver.generate.schism.script import SchismEnsembleGenerationJob
 from coupledmodeldriver.generate import generate_schism_configuration
-from stormevents import StormEvent
-from stormevents.nhc.track import VortexTrack
+from ensembleperturbation.perturbation.atcf import perturb_tracks
+from pylib_essentials.schism_file import (
+    read_schism_hgrid_cached,
+    schism_bpfile,
+    source_sink,
+    TimeHistory,
+)
+from pylib_essentials.utility_functions import inside_polygon
 from pyschism.mesh import Hgrid
 from pyschism.forcing import NWM
-from ensembleperturbation.perturbation.atcf import perturb_tracks
+from scipy import spatial
+from shapely import get_coordinates
+from stormevents import StormEvent
+from stormevents.nhc.track import VortexTrack
 
 import wwm
+from relocate_source_feeder import (
+    relocate_sources,
+    v16_mandatory_sources_coor,
+)
+
+
+REFS = Path('/refs')
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def _fix_nwm_issue(ensemble_dir):
 
-    # Workardoun for hydrology param bug #34
+def _relocate_source_sink(schism_dir, region_shape):
+
+    # Feeder info is generated during mesh generation
+    feeder_info_file = str(REFS / 'feeder_heads_bases_v2.1.xy')
+    old_ss_dir = str(schism_dir)
+    hgrid_fname = str(schism_dir / 'hgrid.gr3')
+
+    # read hgrid
+    hgrid = read_schism_hgrid_cached(hgrid_fname, overwrite_cache=False)
+
+    # read original source/sink
+    original_ss = source_sink.from_files(source_dir=old_ss_dir)
+
+    region = gpd.read_file(region_shape)
+    region_coords = [
+        get_coordinates(p) for p in region.explode(index_parts=True).exterior
+    ]
+
+    # split source/sink into inside and outside region
+    _, outside_ss = original_ss.clip_by_polygons(
+        hgrid=hgrid, polygons_xy=region_coords,
+    )
+
+    # relocate sources
+    relocated_ss = relocate_sources(
+        old_ss_dir=old_ss_dir,  # based on the without feeder hgrid
+        feeder_info_file=feeder_info_file,  
+        hgrid_fname=hgrid_fname,  # HGrid with feeder
+        outdir=str(schism_dir / 'relocated_source_sink'),
+        max_search_radius=2000,  # search radius (in meters)
+        mandatory_sources_coor=v16_mandatory_sources_coor,
+        relocate_map=None,
+        region_list=region_coords,
+    )
+
+    # Copy original data
+    original_ss.writer(str(schism_dir / 'original_source_sink'))
+
+    # combine outside and relocated sources
+    combined_ss = outside_ss + relocated_ss
+    combined_ss.writer(str(schism_dir / 'combined_source_sink'))
+    combined_ss.writer(str(schism_dir))
+
+
+
+def _fix_nwm_issues(ensemble_dir, hires_shapefile):
+
+    # Workaround for hydrology param bug #34
 
     schism_dirs = [ensemble_dir / 'spinup', *ensemble_dir.glob('runs/*')]
     for pth in schism_dirs:
         nm_list = f90nml.read(pth / 'param.nml')
         nm_list['opt']['if_source'] = 1
         nm_list.write(pth / 'param.nml', force=True)
+
+        if hires_shapefile.exists():
+            _relocate_source_sink(pth, hires_shapefile)
 
 
 def main(args):
@@ -53,8 +119,10 @@ def main(args):
     tpxo_dir = args.tpxo_dir
     nwm_file = args.nwm_file
     mesh_dir = args.mesh_directory
+    hires_reg = args.hires_region
     use_wwm = args.use_wwm
     with_hydrology = args.with_hydrology
+    pahm_model = args.pahm_model
 
     workdir = out_dir
     mesh_file = mesh_dir / 'mesh_w_bdry.grd'
@@ -180,6 +248,7 @@ def main(args):
             interval_seconds=3600,
             nws=20,
             fort22_filename=workdir/'track_files'/'original.22',
+            attributes={'model': pahm_model}
         )
     )
 
@@ -215,7 +284,7 @@ def main(args):
     })
 
     if with_hydrology:
-        _fix_nwm_issue(workdir)
+        _fix_nwm_issues(workdir, hires_reg)
     if use_wwm:
         wwm.setup_wwm(mesh_file, workdir, ensemble=True)
 
@@ -267,6 +336,12 @@ def parse_arguments():
         help='path to input mesh (`hgrid.gr3`, `manning.gr3` or `drag.gr3`)',
     )
     argument_parser.add_argument(
+        '--hires-region',
+        type=Path,
+        required=True,
+        help='path to high resolution polygon shapefile'
+    )
+    argument_parser.add_argument(
         "--sample-from-distribution", action="store_true"
     )
     argument_parser.add_argument(
@@ -280,6 +355,9 @@ def parse_arguments():
     )
     argument_parser.add_argument(
         "--with-hydrology", action="store_true"
+    )
+    argument_parser.add_argument(
+        "--pahm-model", choices=['gahm', 'symmetric'], default='gahm'
     )
 
     argument_parser.add_argument(

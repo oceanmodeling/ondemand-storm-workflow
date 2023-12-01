@@ -68,6 +68,7 @@ sbatch --wait --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsm
 
 
 echo "Download necessary data..."
+# TODO: Separate pairing NWM-elem from downloading!
 DOWNLOAD_KWDS=""
 if [ $hydrology == 1 ]; then DOWNLOAD_KWDS+=" --with-hydrology"; fi
 singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/prep.sif download_data \
@@ -84,6 +85,7 @@ PREP_KWDS+=" --track-file $run_dir/nhc_track/hurricane-track.dat"
 PREP_KWDS+=" --output-directory $run_dir/setup/ensemble.dir/"
 PREP_KWDS+=" --num-perturbations $num_perturb"
 PREP_KWDS+=" --mesh-directory $run_dir/mesh/"
+PREP_KWDS+=" --hires-region $run_dir/mesh/hires"
 PREP_KWDS+=" --sample-from-distribution"
 PREP_KWDS+=" --sample-rule $sample_rule"
 PREP_KWDS+=" --date-range-file $run_dir/setup/dates.csv"
@@ -91,6 +93,7 @@ PREP_KWDS+=" --nwm-file $L_NWM_DATASET"
 PREP_KWDS+=" --tpxo-dir $L_TPXO_DATASET"
 if [ $use_wwm == 1 ]; then PREP_KWDS+=" --use-wwm"; fi
 if [ $hydrology == 1 ]; then PREP_KWDS+=" --with-hydrology"; fi
+PREP_KWDS+=" --pahm-model $pahm_model"
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \
