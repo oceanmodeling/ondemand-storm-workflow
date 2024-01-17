@@ -22,6 +22,7 @@ from ensembleperturbation.plotting.surrogate import (
     plot_selected_validations,
     plot_sensitivities,
     plot_validations,
+    plot_selected_probability_fields,
 )
 from ensembleperturbation.uncertainty_quantification.karhunen_loeve_expansion import (
     karhunen_loeve_expansion,
@@ -33,6 +34,7 @@ from ensembleperturbation.uncertainty_quantification.surrogate import (
     surrogate_from_karhunen_loeve,
     surrogate_from_training_set,
     validations_from_surrogate,
+    probability_field_from_surrogate,
 )
 from ensembleperturbation.utilities import get_logger
 
@@ -102,6 +104,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
     make_sensitivities_plot = True
     make_validation_plot = True
     make_percentile_plot = True
+    make_probability_plot = True
 
     save_plots = True
     show_plots = False
@@ -128,6 +131,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
     sensitivities_filename = output_directory / 'sensitivities.nc'
     validation_filename = output_directory / 'validation.nc'
     percentile_filename = output_directory / 'percentiles.nc'
+    probability_filename = output_directory / 'probabilities.nc'
 
     filenames = ['perturbations.nc', 'maxele.63.nc']
     if storm_name is None:
@@ -377,6 +381,29 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
             output_directory=output_directory if save_plots else None,
         )
 
+    if make_probability_plot:
+        level_list = [0.3048, 0.6096, 0.9144, 1.2192, 1.524, 1.8288, 2.1336, 2.4384, 2.7432, 3.048, 3.3528, 3.6576, 3.9624, 4.2672, 4.572, 4.8768, 5.1816, 5.4864, 5.7912, 6.096]
+        
+        node_prob_field = probability_field_from_surrogate(
+            levels=level_list,
+            surrogate_model=surrogate_model,
+            distribution=distribution,
+            training_set=validation_set,
+            minimum_allowable_value=min_depth if use_depth else None,
+            convert_from_log_scale=log_space,
+            convert_from_depths=training_depth_adjust.values if log_space else use_depth,
+            element_table=elements if point_spacing is None else None,
+            filename=probability_filename,
+        )
+        
+        plot_selected_probability_fields(
+            node_prob_field=node_prob_field,
+            level_list=level_list,
+            output_directory=output_directory if save_plots else None,
+            label_unit_convert_factor=1/0.3048,
+            label_unit_name='ft',
+        )
+    
     if show_plots:
         LOGGER.info('showing plots')
         pyplot.show()
