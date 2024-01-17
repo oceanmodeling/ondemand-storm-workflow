@@ -41,14 +41,12 @@ from ensembleperturbation.utilities import get_logger
 LOGGER = get_logger('klpc_wetonly')
 
 
-
 def main(args):
 
     tracks_dir = args.tracks_dir
     ensemble_dir = args.ensemble_dir
 
-    analyze(tracks_dir, ensemble_dir/'analyze')
-
+    analyze(tracks_dir, ensemble_dir / 'analyze')
 
 
 def analyze(tracks_dir, analyze_dir):
@@ -112,16 +110,11 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
     storm_name = None
 
     if log_space:
-        output_directory = (
-            analyze_dir / f'log_k{k_neighbors}_p{idw_order}_n{mann_coef}'
-        )
+        output_directory = analyze_dir / f'log_k{k_neighbors}_p{idw_order}_n{mann_coef}'
     else:
-        output_directory = (
-            analyze_dir / f'linear_k{k_neighbors}_p{idw_order}_n{mann_coef}'
-        )
+        output_directory = analyze_dir / f'linear_k{k_neighbors}_p{idw_order}_n{mann_coef}'
     if not output_directory.exists():
         output_directory.mkdir(parents=True, exist_ok=True)
-
 
     subset_filename = output_directory / 'subset.nc'
     kl_filename = output_directory / 'karhunen_loeve.pkl'
@@ -246,9 +239,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
         training_set_adjusted += training_set_adjusted['depth']
 
     if log_space:
-        training_depth_adjust = numpy.fmax(
-            0, min_depth - training_set_adjusted.min(axis=0)
-        )
+        training_depth_adjust = numpy.fmax(0, min_depth - training_set_adjusted.min(axis=0))
         training_set_adjusted += training_depth_adjust
         training_set_adjusted = numpy.log(training_set_adjusted)
 
@@ -305,9 +296,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
 
         plot_kl_surrogate_fit(
             kl_fit=kl_fit,
-            output_filename=output_directory / 'kl_surrogate_fit.png'
-            if save_plots
-            else None,
+            output_filename=output_directory / 'kl_surrogate_fit.png' if save_plots else None,
         )
 
     # convert the KL surrogate model to the overall surrogate at each node
@@ -382,8 +371,29 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
         )
 
     if make_probability_plot:
-        level_list = [0.3048, 0.6096, 0.9144, 1.2192, 1.524, 1.8288, 2.1336, 2.4384, 2.7432, 3.048, 3.3528, 3.6576, 3.9624, 4.2672, 4.572, 4.8768, 5.1816, 5.4864, 5.7912, 6.096]
-        
+        level_list = [
+            0.3048,
+            0.6096,
+            0.9144,
+            1.2192,
+            1.524,
+            1.8288,
+            2.1336,
+            2.4384,
+            2.7432,
+            3.048,
+            3.3528,
+            3.6576,
+            3.9624,
+            4.2672,
+            4.572,
+            4.8768,
+            5.1816,
+            5.4864,
+            5.7912,
+            6.096,
+        ]
+
         node_prob_field = probability_field_from_surrogate(
             levels=level_list,
             surrogate_model=surrogate_model,
@@ -395,15 +405,15 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
             element_table=elements if point_spacing is None else None,
             filename=probability_filename,
         )
-        
+
         plot_selected_probability_fields(
             node_prob_field=node_prob_field,
             level_list=level_list,
             output_directory=output_directory if save_plots else None,
-            label_unit_convert_factor=1/0.3048,
+            label_unit_convert_factor=1 / 0.3048,
             label_unit_name='ft',
         )
-    
+
     if show_plots:
         LOGGER.info('showing plots')
         pyplot.show()

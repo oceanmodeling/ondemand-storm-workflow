@@ -7,7 +7,6 @@ from ensembleperturbation.utilities import get_logger
 LOGGER = get_logger('klpc_wetonly')
 
 
-
 def main(args):
 
     tracks_dir = args.tracks_dir
@@ -16,10 +15,11 @@ def main(args):
     output = combine_results(
         model='schism',
         adcirc_like=True,
-        output=ensemble_dir/'analyze',
+        output=ensemble_dir / 'analyze',
         directory=ensemble_dir,
-        parallel=not args.sequential
+        parallel=not args.sequential,
     )
+
 
 if __name__ == '__main__':
 

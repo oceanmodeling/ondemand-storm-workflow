@@ -27,10 +27,9 @@ def main(args):
     workdir.mkdir(exist_ok=True)
 
     dt_data = pd.read_csv(dt_rng_path, delimiter=',')
-    date_1, date_2, _ = pd.to_datetime(dt_data.date_time).dt.strftime(
-            "%Y%m%d%H").values
-    model_start_time = datetime.strptime(date_1, "%Y%m%d%H")
-    model_end_time = datetime.strptime(date_2, "%Y%m%d%H")
+    date_1, date_2, _ = pd.to_datetime(dt_data.date_time).dt.strftime('%Y%m%d%H').values
+    model_start_time = datetime.strptime(date_1, '%Y%m%d%H')
+    model_end_time = datetime.strptime(date_2, '%Y%m%d%H')
     spinup_time = timedelta(days=2)
 
     # Right now the only download is for NWM, in the future there
@@ -48,10 +47,9 @@ def main(args):
                 start_date=model_start_time - spinup_time,
                 end_date=model_end_time - model_start_time + spinup_time,
                 overwrite=True,
-                )
+            )
             nwm.pairings.save_json(
-                sources=workdir / 'source.json',
-                sinks=workdir / 'sink.json'
+                sources=workdir / 'source.json', sinks=workdir / 'sink.json'
             )
 
 
@@ -63,18 +61,16 @@ def parse_arguments():
         required=True,
         type=Path,
         default=None,
-        help='path to store generated configuration files'
+        help='path to store generated configuration files',
     )
     argument_parser.add_argument(
-        "--date-range-file",
+        '--date-range-file',
         required=True,
         type=Path,
-        help="path to the file containing simulation date range"
+        help='path to the file containing simulation date range',
     )
     argument_parser.add_argument(
-        "--nwm-file",
-        type=Path,
-        help="path to the NWM hydrofabric dataset",
+        '--nwm-file', type=Path, help='path to the NWM hydrofabric dataset',
     )
     argument_parser.add_argument(
         '--mesh-directory',
@@ -82,14 +78,12 @@ def parse_arguments():
         required=True,
         help='path to input mesh (`hgrid.gr3`, `manning.gr3` or `drag.gr3`)',
     )
-    argument_parser.add_argument(
-        "--with-hydrology", action="store_true"
-    )
+    argument_parser.add_argument('--with-hydrology', action='store_true')
 
     args = argument_parser.parse_args()
 
     return args
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main(parse_arguments())
