@@ -371,31 +371,11 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
         )
 
     if make_probability_plot:
-        level_list = [
-            0.3048,
-            0.6096,
-            0.9144,
-            1.2192,
-            1.524,
-            1.8288,
-            2.1336,
-            2.4384,
-            2.7432,
-            3.048,
-            3.3528,
-            3.6576,
-            3.9624,
-            4.2672,
-            4.572,
-            4.8768,
-            5.1816,
-            5.4864,
-            5.7912,
-            6.096,
-        ]
+        level_ft = numpy.arange(1, 21)
+        level_m = (level_ft * 0.3048).round(decimals=4)
 
         node_prob_field = probability_field_from_surrogate(
-            levels=level_list,
+            levels=level_m,
             surrogate_model=surrogate_model,
             distribution=distribution,
             training_set=validation_set,
@@ -408,7 +388,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
 
         plot_selected_probability_fields(
             node_prob_field=node_prob_field,
-            level_list=level_list,
+            level_list=level_m,
             output_directory=output_directory if save_plots else None,
             label_unit_convert_factor=1 / 0.3048,
             label_unit_name='ft',
