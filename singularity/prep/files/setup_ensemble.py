@@ -51,7 +51,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-
 def _relocate_source_sink(schism_dir, region_shape):
 
     # Feeder info is generated during mesh generation
@@ -66,19 +65,15 @@ def _relocate_source_sink(schism_dir, region_shape):
     original_ss = source_sink.from_files(source_dir=old_ss_dir)
 
     region = gpd.read_file(region_shape)
-    region_coords = [
-        get_coordinates(p) for p in region.explode(index_parts=True).exterior
-    ]
+    region_coords = [get_coordinates(p) for p in region.explode(index_parts=True).exterior]
 
     # split source/sink into inside and outside region
-    _, outside_ss = original_ss.clip_by_polygons(
-        hgrid=hgrid, polygons_xy=region_coords,
-    )
+    _, outside_ss = original_ss.clip_by_polygons(hgrid=hgrid, polygons_xy=region_coords,)
 
     # relocate sources
     relocated_ss = relocate_sources(
         old_ss_dir=old_ss_dir,  # based on the without feeder hgrid
-        feeder_info_file=feeder_info_file,  
+        feeder_info_file=feeder_info_file,
         hgrid_fname=hgrid_fname,  # HGrid with feeder
         outdir=str(schism_dir / 'relocated_source_sink'),
         max_search_radius=2000,  # search radius (in meters)
@@ -94,7 +89,6 @@ def _relocate_source_sink(schism_dir, region_shape):
     combined_ss = outside_ss + relocated_ss
     combined_ss.writer(str(schism_dir / 'combined_source_sink'))
     combined_ss.writer(str(schism_dir))
-
 
 
 def _fix_nwm_issues(ensemble_dir, hires_shapefile):
@@ -130,17 +124,16 @@ def main(args):
     workdir.mkdir(exist_ok=True)
 
     dt_data = pd.read_csv(dt_rng_path, delimiter=',')
-    date_1, date_2, date_3 = pd.to_datetime(dt_data.date_time).dt.strftime(
-            "%Y%m%d%H").values
-    model_start_time = datetime.strptime(date_1, "%Y%m%d%H")
-    model_end_time = datetime.strptime(date_2, "%Y%m%d%H")
-    perturb_start = datetime.strptime(date_3, "%Y%m%d%H")
+    date_1, date_2, date_3 = pd.to_datetime(dt_data.date_time).dt.strftime('%Y%m%d%H').values
+    model_start_time = datetime.strptime(date_1, '%Y%m%d%H')
+    model_end_time = datetime.strptime(date_2, '%Y%m%d%H')
+    perturb_start = datetime.strptime(date_3, '%Y%m%d%H')
     spinup_time = timedelta(days=2)
 
     forcing_configurations = []
-    forcing_configurations.append(TidalForcingJSON(
-            resource=tpxo_dir / 'h_tpxo9.v1.nc',
-            tidal_source=TidalSource.TPXO))
+    forcing_configurations.append(
+        TidalForcingJSON(resource=tpxo_dir / 'h_tpxo9.v1.nc', tidal_source=TidalSource.TPXO)
+    )
     if with_hydrology:
         forcing_configurations.append(
             NationalWaterModelFocringJSON(
@@ -148,10 +141,9 @@ def main(args):
                 cache=True,
                 source_json=workdir / 'source.json',
                 sink_json=workdir / 'sink.json',
-                pairing_hgrid=mesh_file
+                pairing_hgrid=mesh_file,
             )
         )
-
 
     platform = Platform.LOCAL
 
@@ -161,11 +153,10 @@ def main(args):
     orig_track = VortexTrack.from_file(track_path)
     adv_uniq = orig_track.data.advisory.unique()
     if len(adv_uniq) != 1:
-        raise ValueError("Track file has multiple advisory types!")
+        raise ValueError('Track file has multiple advisory types!')
 
     advisory = adv_uniq.item()
     file_deck = 'a' if advisory != 'BEST' else 'b'
-
 
     # NOTE: Perturbers use min("forecast_time") to filter multiple
     # tracks. But for OFCL forecast simulation, the track file we
@@ -173,26 +164,24 @@ def main(args):
     # perturb, the preceeding entries are 0-hour forecasts from
     # previous forecast_times
     track_to_perturb = VortexTrack.from_file(
-            track_path,
-            start_date=perturb_start,
-            forecast_time=perturb_start if advisory != 'BEST' else None,
-            end_date=model_end_time,
-            file_deck=file_deck,
-            advisories=[advisory],
-        )
-    track_to_perturb.to_file(
-        workdir/'track_to_perturb.dat', overwrite=True
+        track_path,
+        start_date=perturb_start,
+        forecast_time=perturb_start if advisory != 'BEST' else None,
+        end_date=model_end_time,
+        file_deck=file_deck,
+        advisories=[advisory],
     )
+    track_to_perturb.to_file(workdir / 'track_to_perturb.dat', overwrite=True)
     perturbations = perturb_tracks(
         perturbations=args.num_perturbations,
-        directory=workdir/'track_files',
-        storm=workdir/'track_to_perturb.dat',
+        directory=workdir / 'track_files',
+        storm=workdir / 'track_to_perturb.dat',
         variables=[
             'cross_track',
             'along_track',
             'radius_of_maximum_winds',
             'max_sustained_wind_speed',
-            ],
+        ],
         sample_from_distribution=args.sample_from_distribution,
         sample_rule=args.sample_rule,
         quadrature=args.quadrature,
@@ -204,9 +193,7 @@ def main(args):
     )
 
     if perturb_start != model_start_time:
-        perturb_idx = orig_track.data[
-            orig_track.data.datetime == perturb_start
-        ].index.min()
+        perturb_idx = orig_track.data[orig_track.data.datetime == perturb_start].index.min()
 
         if perturb_idx > 0:
             # If only part of the track needs to be updated
@@ -216,26 +203,21 @@ def main(args):
             unperturbed = VortexTrack(
                 unperturbed_data,
                 file_deck='b',
-                advisories = ['BEST'],
-                end_date=orig_track.data.iloc[perturb_idx - 1].datetime
+                advisories=['BEST'],
+                end_date=orig_track.data.iloc[perturb_idx - 1].datetime,
             )
 
             # Read generated tracks and append to unpertubed section
 
-            perturbed_tracks = glob.glob(str(workdir/'track_files'/'*.22'))
+            perturbed_tracks = glob.glob(str(workdir / 'track_files' / '*.22'))
             for pt in perturbed_tracks:
                 # Fake BEST track here (in case it's not a real best)!
                 perturbed_data = VortexTrack.from_file(pt).data
                 perturbed_data.advisory = 'BEST'
                 perturbed_data.forecast_hours = 0
-                perturbed = VortexTrack(
-                    perturbed_data,
-                    file_deck='b',
-                    advisories = ['BEST'],
-                )
+                perturbed = VortexTrack(perturbed_data, file_deck='b', advisories=['BEST'],)
                 full_track = pd.concat(
-                    (unperturbed.fort_22(), perturbed.fort_22()),
-                    ignore_index=True
+                    (unperturbed.fort_22(), perturbed.fort_22()), ignore_index=True
                 )
                 # Overwrites the perturbed-segment-only file
                 full_track.to_csv(pt, index=False, header=False)
@@ -247,8 +229,8 @@ def main(args):
             nhc_code=f'{args.name}{args.year}',
             interval_seconds=3600,
             nws=20,
-            fort22_filename=workdir/'track_files'/'original.22',
-            attributes={'model': pahm_model}
+            fort22_filename=workdir / 'track_files' / 'original.22',
+            attributes={'model': pahm_model},
         )
     )
 
@@ -261,12 +243,10 @@ def main(args):
         'forcings': forcing_configurations,
         'perturbations': perturbations,
         'platform': platform,
-#        'schism_executable': 'pschism_PAHM_TVD-VL'
+        #        'schism_executable': 'pschism_PAHM_TVD-VL'
     }
 
-    run_configuration = SCHISMRunConfiguration(
-        **run_config_kwargs,
-    )
+    run_configuration = SCHISMRunConfiguration(**run_config_kwargs,)
     run_configuration['schism']['hgrid_path'] = mesh_file
     run_configuration['schism']['attributes']['ncor'] = 1
 
@@ -275,13 +255,15 @@ def main(args):
     )
 
     # Now generate the setup
-    generate_schism_configuration(**{
-        'configuration_directory': workdir,
-        'output_directory': workdir,
-        'relative_paths': True,
-        'overwrite': True,
-        'parallel': True
-    })
+    generate_schism_configuration(
+        **{
+            'configuration_directory': workdir,
+            'output_directory': workdir,
+            'relative_paths': True,
+            'overwrite': True,
+            'parallel': True,
+        }
+    )
 
     if with_hydrology:
         _fix_nwm_issues(workdir, hires_reg)
@@ -293,10 +275,10 @@ def parse_arguments():
     argument_parser = ArgumentParser()
 
     argument_parser.add_argument(
-        "--track-file",
-        help="path to the storm track file for parametric wind setup",
+        '--track-file',
+        help='path to the storm track file for parametric wind setup',
         type=Path,
-        required=True
+        required=True,
     )
 
     argument_parser.add_argument(
@@ -304,30 +286,26 @@ def parse_arguments():
         required=True,
         type=Path,
         default=None,
-        help='path to store generated configuration files'
+        help='path to store generated configuration files',
     )
     argument_parser.add_argument(
-        "--date-range-file",
+        '--date-range-file',
         required=True,
         type=Path,
-        help="path to the file containing simulation date range"
+        help='path to the file containing simulation date range',
     )
     argument_parser.add_argument(
-        '-n', '--num-perturbations',
+        '-n',
+        '--num-perturbations',
         type=int,
         required=True,
         help='path to input mesh (`hgrid.gr3`, `manning.gr3` or `drag.gr3`)',
     )
     argument_parser.add_argument(
-        "--tpxo-dir",
-        required=True,
-        type=Path,
-        help="path to the TPXO dataset directory",
+        '--tpxo-dir', required=True, type=Path, help='path to the TPXO dataset directory',
     )
     argument_parser.add_argument(
-        "--nwm-file",
-        type=Path,
-        help="path to the NWM hydrofabric dataset",
+        '--nwm-file', type=Path, help='path to the NWM hydrofabric dataset',
     )
     argument_parser.add_argument(
         '--mesh-directory',
@@ -339,38 +317,23 @@ def parse_arguments():
         '--hires-region',
         type=Path,
         required=True,
-        help='path to high resolution polygon shapefile'
+        help='path to high resolution polygon shapefile',
     )
-    argument_parser.add_argument(
-        "--sample-from-distribution", action="store_true"
-    )
-    argument_parser.add_argument(
-        "--sample-rule", type=str, default='random'
-    )
-    argument_parser.add_argument(
-        "--quadrature", action="store_true"
-    )
-    argument_parser.add_argument(
-        "--use-wwm", action="store_true"
-    )
-    argument_parser.add_argument(
-        "--with-hydrology", action="store_true"
-    )
-    argument_parser.add_argument(
-        "--pahm-model", choices=['gahm', 'symmetric'], default='gahm'
-    )
+    argument_parser.add_argument('--sample-from-distribution', action='store_true')
+    argument_parser.add_argument('--sample-rule', type=str, default='random')
+    argument_parser.add_argument('--quadrature', action='store_true')
+    argument_parser.add_argument('--use-wwm', action='store_true')
+    argument_parser.add_argument('--with-hydrology', action='store_true')
+    argument_parser.add_argument('--pahm-model', choices=['gahm', 'symmetric'], default='gahm')
 
-    argument_parser.add_argument(
-        "name", help="name of the storm", type=str)
+    argument_parser.add_argument('name', help='name of the storm', type=str)
 
-    argument_parser.add_argument(
-        "year", help="year of the storm", type=int)
-
+    argument_parser.add_argument('year', help='year of the storm', type=int)
 
     args = argument_parser.parse_args()
 
     return args
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main(parse_arguments())
