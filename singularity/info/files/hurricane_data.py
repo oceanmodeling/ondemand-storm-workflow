@@ -137,7 +137,7 @@ def main(args):
                 gdf_track
             ))
             df_dt['date_time'] = (
-                track.start_date, track.end_date, forecast_start
+                forecast_start - timedelta(days=2), track.end_date, forecast_start
             )
 
 

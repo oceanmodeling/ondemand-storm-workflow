@@ -20,7 +20,9 @@ from matplotlib.transforms import Bbox
 from pyschism import dates
 from pyschism.enums import NWSType
 from pyschism.driver import ModelConfig
-from pyschism.forcing.bctides import iettype, ifltype
+from pyschism.forcing.bctides.tides import Tides, TidalDatabase
+from pyschism.forcing.bctides.tpxo import TPXO_ELEVATION
+from pyschism.forcing.bctides.tpxo import TPXO_VELOCITY
 from pyschism.forcing.nws import GFS, HRRR, ERA5, BestTrackForcing
 from pyschism.forcing.nws.nws2 import hrrr3
 from pyschism.forcing.source_sink import NWM
@@ -146,17 +148,19 @@ def copy_meteo_cache(sflux_dir, meteo_cache_path):
 
 
 def setup_schism_model(
-    mesh_path,
-    domain_bbox_path,
-    date_range_path,
-    station_info_path,
-    out_dir,
-    main_cache_path,
-    parametric_wind=False,
-    nhc_track_file=None,
-    storm_id=None,
-    use_wwm=False,
-):
+        mesh_path,
+        domain_bbox_path,
+        date_range_path,
+        station_info_path,
+        out_dir,
+        main_cache_path,
+        parametric_wind=False,
+        nhc_track_file=None,
+        storm_id=None,
+        use_wwm=False,
+        tpxo_dir=None,
+        ):
+
 
     domain_box = gpd.read_file(domain_bbox_path)
     atm_bbox = Bbox(domain_box.to_crs('EPSG:4326').total_bounds.reshape(2, 2))
@@ -173,9 +177,12 @@ def setup_schism_model(
     # measurement days +7 days of simulation: 3 ramp, 2 prior
     # & 2 after the measurement dates
     dt_data = pd.read_csv(date_range_path, delimiter=',')
-    date_1, date_2 = pd.to_datetime(dt_data.date_time).dt.strftime('%Y%m%d%H').values
-    date_1 = datetime.strptime(date_1, '%Y%m%d%H')
-    date_2 = datetime.strptime(date_2, '%Y%m%d%H')
+    date_1, date_2, date_3 = pd.to_datetime(dt_data.date_time).dt.strftime(
+            "%Y%m%d%H").values
+    date_1 = datetime.strptime(date_1, "%Y%m%d%H")
+    date_2 = datetime.strptime(date_2, "%Y%m%d%H")
+#    date_3 = datetime.strptime(date_3, "%Y%m%d%H")
+
 
     # If there are no observation data, it's hindcast mode
     hindcast_mode = (station_info_path).is_file()
@@ -239,15 +246,23 @@ def setup_schism_model(
         # hrrr3.HRRR combination are supported by nws2 mechanism
         pass
 
-    logger.info('Creating model configuration ...')
+
+    tidal_flags = [3, 3, 0, 0]
+    logger.info("Creating model configuration ...")
     config = ModelConfig(
         hgrid=hgrid,
         fgrid=fgrid,
-        iettype=iettype.Iettype3(database='tpxo'),
-        ifltype=ifltype.Ifltype3(database='tpxo'),
+        flags=[tidal_flags for _ in hgrid.boundaries.open.itertuples()],
+        constituents=[],  # we're overwriting Tides obj
+        database='tpxo',  # we're overwriting Tides obj
         nws=atmospheric,
         source_sink=NWM(),
     )
+    tide_db = TidalDatabase.TPXO.value(
+        h_file=tpxo_dir / TPXO_ELEVATION, u_file=tpxo_dir / TPXO_VELOCITY,
+    )
+    tides = Tides(tidal_database=tide_db, constituents='all')
+    config.bctides.tides = tides
 
     if config.forcings.nws and getattr(config.forcings.nws, 'sflux_2', None):
         config.forcings.nws.sflux_2.inventory.file_interval = timedelta(hours=6)
@@ -448,7 +463,8 @@ def main(args):
         nhc_track_file=nhc_track,
         storm_id=f'{storm_name}{storm_year}',
         use_wwm=use_wwm,
-    )
+        tpxo_dir=tpxo_dir,
+        )
 
 
 if __name__ == '__main__':

@@ -33,6 +33,9 @@ From: continuumio/miniconda3:23.5.2-0-alpine
     mamba install -y -n $ENV_NAME -cconda-forge \
         --force-reinstall geopandas geopandas-base
 
+    pip uninstall pygeos  # We use shapely 2
+    mamba install -y -cconda-forge --force-reinstall geopandas
+
     git clone https://github.com/schism-dev/schism
     cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/Relocate/relocate_source_feeder.py /scripts
     cp -v schism/src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/feeder_heads_bases_v2.1.xy /refs
