@@ -159,6 +159,7 @@ def setup_schism_model(
         storm_id=None,
         use_wwm=False,
         tpxo_dir=None,
+        with_hydrology=False,
         ):
 
 
@@ -249,6 +250,9 @@ def setup_schism_model(
 
     tidal_flags = [3, 3, 0, 0]
     logger.info("Creating model configuration ...")
+    src_sink = None
+    if with_hydrology:
+        src_sink = NWM()
     config = ModelConfig(
         hgrid=hgrid,
         fgrid=fgrid,
@@ -256,7 +260,7 @@ def setup_schism_model(
         constituents=[],  # we're overwriting Tides obj
         database='tpxo',  # we're overwriting Tides obj
         nws=atmospheric,
-        source_sink=NWM(),
+        source_sink=src_sink,
     )
     tide_db = TidalDatabase.TPXO.value(
         h_file=tpxo_dir / TPXO_ELEVATION, u_file=tpxo_dir / TPXO_VELOCITY,
@@ -411,7 +415,8 @@ def setup_schism_model(
 
     # Workardoun for hydrology param bug #34
     nm_list = f90nml.read(schism_dir / 'param.nml')
-    nm_list['opt']['if_source'] = 1
+    if with_hydrology:
+        nm_list['opt']['if_source'] = 1
     nm_list.write(schism_dir / 'param.nml', force=True)
     ## end of workaround
 
@@ -445,12 +450,14 @@ def main(args):
     nwm_dir = args.nwm_dir
     use_wwm = args.use_wwm
 
-    if TPXO_LINK_PATH.is_dir():
-        shutil.rmtree(TPXO_LINK_PATH)
-    if NWM_LINK_PATH.is_dir():
-        shutil.rmtree(NWM_LINK_PATH)
-    os.symlink(tpxo_dir, TPXO_LINK_PATH, target_is_directory=True)
-    os.symlink(nwm_dir, NWM_LINK_PATH, target_is_directory=True)
+    with_hydrology = args.with_hydrology
+
+#    if TPXO_LINK_PATH.is_dir():
+#        shutil.rmtree(TPXO_LINK_PATH)
+#    if NWM_LINK_PATH.is_dir():
+#        shutil.rmtree(NWM_LINK_PATH)
+#    os.symlink(tpxo_dir, TPXO_LINK_PATH, target_is_directory=True)
+#    os.symlink(nwm_dir, NWM_LINK_PATH, target_is_directory=True)
 
     setup_schism_model(
         mesh_path,
@@ -464,6 +471,7 @@ def main(args):
         storm_id=f'{storm_name}{storm_year}',
         use_wwm=use_wwm,
         tpxo_dir=tpxo_dir,
+        with_hydrology=with_hydrology,
         )
 
 
@@ -520,11 +528,20 @@ if __name__ == '__main__':
         '--out', help='path to the setup output (solver input) directory', type=pathlib.Path
     )
 
-    parser.add_argument('--use-wwm', action='store_true')
+    parser.add_argument(
+        "--use-wwm", action="store_true"
+    )
 
-    parser.add_argument('name', help='name of the storm', type=str)
+    parser.add_argument(
+        "--with-hydrology", action="store_true"
+    )
 
-    parser.add_argument('year', help='year of the storm', type=int)
+    parser.add_argument(
+        "name", help="name of the storm", type=str)
+
+    parser.add_argument(
+        "year", help="year of the storm", type=int)
+
 
     args = parser.parse_args()
 
