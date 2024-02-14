@@ -58,6 +58,7 @@ def main(args):
     else:
         event = StormEvent(name_or_code, year)
     nhc_code = event.nhc_code
+    storm_name = event.name
     logger.info("Fetching a-deck track info...")
 
     prescribed = None
@@ -245,6 +246,7 @@ def main(args):
     df_dt.to_csv(date_out)
     # Remove duplicate entries for similar isotach and time
     # (e.g. Dorian19 and Ian22 best tracks)
+    track.data.name = storm_name
     track.to_file(track_out)
     gs = gpd.GeoSeries(windswath)
     gdf_windswath = gpd.GeoDataFrame(
