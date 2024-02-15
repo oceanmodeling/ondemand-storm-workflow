@@ -175,6 +175,7 @@ def main(args):
         # NOTE: Fake best track AFTER perturbation
 #        gdf_track.advisory = 'BEST'
 #        gdf_track.forecast_hours = 0
+        gdf_track['name'] = storm_name
         track = VortexTrack(storm=gdf_track, file_deck='a', advisories=[advisory])
 
         windswath_dict = track.wind_swaths(wind_speed=34)
@@ -246,7 +247,6 @@ def main(args):
     df_dt.to_csv(date_out)
     # Remove duplicate entries for similar isotach and time
     # (e.g. Dorian19 and Ian22 best tracks)
-    track.data.name = storm_name
     track.to_file(track_out)
     gs = gpd.GeoSeries(windswath)
     gdf_windswath = gpd.GeoDataFrame(
