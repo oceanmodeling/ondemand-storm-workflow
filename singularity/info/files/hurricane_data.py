@@ -253,7 +253,7 @@ def main(args):
         geometry=gs, data={'RADII': len(gs) * [34]}, crs="EPSG:4326"
     )
     gdf_windswath.to_file(swath_out)
-    if coops_ssh is not None:
+    if coops_ssh is not None and len(coops_ssh) > 0:
         coops_ssh.to_netcdf(sta_dat_out, 'w')
         coops_ssh[['x', 'y']].to_dataframe().drop(columns=['nws_id']).to_csv(
                 sta_loc_out, header=False, index=False)
