@@ -226,7 +226,7 @@ def main(args):
     # spinup too instead of spinup trying to download!
     forcing_configurations.append(
         BestTrackForcingJSON(
-            nhc_code=f'{args.name}{args.year}',
+            nhc_code=orig_track.nhc_code,
             interval_seconds=3600,
             nws=20,
             fort22_filename=workdir / 'track_files' / 'original.22',

@@ -58,6 +58,7 @@ def main(args):
     else:
         event = StormEvent(name_or_code, year)
     nhc_code = event.nhc_code
+    storm_name = event.name
     logger.info("Fetching a-deck track info...")
 
     prescribed = None
@@ -137,7 +138,7 @@ def main(args):
                 gdf_track
             ))
             df_dt['date_time'] = (
-                track.start_date, track.end_date, forecast_start
+                forecast_start - timedelta(days=2), track.end_date, forecast_start
             )
 
 
@@ -174,6 +175,7 @@ def main(args):
         # NOTE: Fake best track AFTER perturbation
 #        gdf_track.advisory = 'BEST'
 #        gdf_track.forecast_hours = 0
+        gdf_track['name'] = storm_name
         track = VortexTrack(storm=gdf_track, file_deck='a', advisories=[advisory])
 
         windswath_dict = track.wind_swaths(wind_speed=34)
@@ -251,7 +253,7 @@ def main(args):
         geometry=gs, data={'RADII': len(gs) * [34]}, crs="EPSG:4326"
     )
     gdf_windswath.to_file(swath_out)
-    if coops_ssh is not None:
+    if coops_ssh is not None and len(coops_ssh) > 0:
         coops_ssh.to_netcdf(sta_dat_out, 'w')
         coops_ssh[['x', 'y']].to_dataframe().drop(columns=['nws_id']).to_csv(
                 sta_loc_out, header=False, index=False)
