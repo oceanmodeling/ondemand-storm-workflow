@@ -1,30 +1,27 @@
 #!/bin/bash
 #SBATCH --parsable
-#SBATCH --nodes=1
-#SBATCH --ntasks=80
+#SBATCH --nodes=10
+#SBATCH --ntasks=36
 #SBATCH --cpus-per-task=1
+#SBATCH --exclusive
 #SBATCH --time=03:00:00
-#SBATCH --account=nos-surge
-#SBATCH --qos=batch
-#SBATCH --partition=hercules
 
 set -ex
 
 pushd ${SCHISM_DIR}
 mkdir -p outputs
 
-export BIN_DIR=/work2/noaa/nos-surge/smani/bin/
+export BIN_DIR=/nhc/bin/
 
 module purge
-module load python
-module load intel-oneapi-compilers/2022.2.1 intel-oneapi-mpi/2021.7.1
-module load netcdf-c/4.9.0 netcdf-fortran/4.6.0
+module load intel/2022.1.2 impi/2022.1.2
+module load netcdf
 module list
 
 export MV2_ENABLE_AFFINITY=0
 ulimit -s unlimited
 
-srun $BIN_DIR/pschism_HERCULES_PAHM_TVD-VL 4
+srun $BIN_DIR/pschism_PAHM_TVD-VL 4
 
 if [ $? -eq 0 ]; then
     echo "Combining outputs..."

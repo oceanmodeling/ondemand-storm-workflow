@@ -1,5 +1,5 @@
-L_DEF_DIR=/work2/noaa/nos-surge/smani/sandbox/ondemand-storm-workflow/singularity/
-L_IMG_DIR=/work2/noaa/nos-surge/smani/sandbox/ondemand-storm-workflow/singularity/imgs
+L_DEF_DIR=/nhc/Soroosh.Mani/sandbox/ondemand-storm-workflow/singularity/
+L_IMG_DIR=/nhc/Soroosh.Mani/sandbox/ondemand-storm-workflow/singularity/imgs
 
 mkdir -p $L_IMG_DIR
 for i in prep; do

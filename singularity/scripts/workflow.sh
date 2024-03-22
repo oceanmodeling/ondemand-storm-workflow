@@ -14,7 +14,7 @@ export PATH=$L_SCRIPT_DIR:$PATH
 mkdir -p $TMPDIR
 
 function init {
-    local run_dir=/work2/noaa/nos-surge/smani/runs/$1
+    local run_dir=/nhc/Soroosh.Mani/runs/$1
     mkdir $run_dir
 #    mkdir $run_dir/downloads
     mkdir $run_dir/mesh
