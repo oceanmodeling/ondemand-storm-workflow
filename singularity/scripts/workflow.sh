@@ -14,7 +14,7 @@ export PATH=$L_SCRIPT_DIR:$PATH
 mkdir -p $TMPDIR
 
 function init {
-    local run_dir=/lustre/hurricanes/$1
+    local run_dir=/work2/noaa/nos-surge/smani/runs/$1
     mkdir $run_dir
 #    mkdir $run_dir/downloads
     mkdir $run_dir/mesh
@@ -64,7 +64,7 @@ else
 fi
 MESH_KWDS+=" --out ${run_dir}/mesh"
 export MESH_KWDS
-sbatch --wait --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsmesh.sif $L_SCRIPT_DIR/mesh.sbatch
+sbatch --wait --job-name=mesh_$tag --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsmesh.sif $L_SCRIPT_DIR/mesh.sbatch
 
 
 echo "Download necessary data..."
@@ -98,6 +98,7 @@ export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \
     --wait \
+    --job-name=prep_$tag \
     --parsable \
     --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year,IMG="$L_IMG_DIR/prep.sif" \
     $L_SCRIPT_DIR/prep.sbatch \
@@ -111,6 +112,7 @@ SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
 SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --parsable \
+    --job-name=spinup_$tag \
     -d afterok:$setup_id \
     --export=$SCHISM_SHARED_ENV,SCHISM_DIR="$run_dir/setup/ensemble.dir/spinup",SCHISM_EXEC="$spinup_exec" \
     $L_SCRIPT_DIR/schism.sbatch
@@ -120,6 +122,7 @@ joblist=""
 for i in $run_dir/setup/ensemble.dir/runs/*; do
     jobid=$(
         sbatch --parsable -d afterok:$spinup_id \
+        --job-name="run_$(basename $i)_$tag" \
         --export=$SCHISM_SHARED_ENV,SCHISM_DIR="$i",SCHISM_EXEC="$hotstart_exec" \
         $L_SCRIPT_DIR/schism.sbatch
         )
@@ -131,6 +134,7 @@ done
 # Post processing
 sbatch \
     --parsable \
+    --job-name=post_$tag \
     -d afterok${joblist} \
     --export=ALL,IMG="$L_IMG_DIR/prep.sif",ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
     $L_SCRIPT_DIR/post.sbatch

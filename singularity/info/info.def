@@ -20,7 +20,7 @@ From: continuumio/miniconda3:23.3.1-0-alpine
     mamba clean --all --yes
 
     conda run -n info --no-capture-output \
-        pip install stormevents==2.2.3
+        pip install stormevents==2.2.1
 
 
     conda clean --all
