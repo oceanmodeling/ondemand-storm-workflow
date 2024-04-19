@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --parsable
-#SBATCH --nodes=10
-#SBATCH --ntasks=360
+#SBATCH --nodes=3
+#SBATCH --ntasks=108
 #SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=03:00:00
@@ -21,6 +21,7 @@ module list
 export MV2_ENABLE_AFFINITY=0
 ulimit -s unlimited
 
+date
 mpirun -np $SLURM_NTASKS $BIN_DIR/pschism_PAHM_TVD-VL 4
 
 if [ $? -eq 0 ]; then
