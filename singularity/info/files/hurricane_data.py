@@ -66,6 +66,7 @@ def trackstart_from_file(
 def get_perturb_timestamp_in_track(
     track: VortexTrack,
     time_col: 'str',
+    hr_before_landfall: datetime,
     prescribed: Optional[datetime],
     land_shapes: List[base.BaseGeometry],
 ) -> Optional[datetime]:
@@ -111,7 +112,7 @@ def get_perturb_timestamp_in_track(
     times_start_landfall = candidates[
         candidates['timediff'] >= dt
     ][
-        'track_start_time', 'datetime'
+        ['track_start_time', 'datetime']
     ].iloc[-1]
     picked_track = track_data[
         track_data.track_start_time == times_start_landfall.track_start_time]
@@ -164,13 +165,15 @@ def main(args):
     df_dt = pd.DataFrame(columns=['date_time'])
     
     # All preprocessed tracks are treated as OFCL
-    local_track_file = track_dir / f'a{nhc_code.lower()}.dat'
+    local_track_file = pathlib.Path()
+    if track_dir is not None:
+        local_track_file = track_dir / f'a{nhc_code.lower()}.dat'
 
     if use_past_forecast or is_current_storm:
         logger.info("Fetching a-deck track info...")
 
         advisory = 'OFCL'
-        if not local_track_file.exists():
+        if not local_track_file.is_file():
             # Find and pick a single advisory based on priority
             temp_track = event.track(file_deck='a')
             adv_avail = temp_track.unfiltered_data.advisory.unique()
@@ -218,6 +221,7 @@ def main(args):
             forecast_start = get_perturb_timestamp_in_track(
                 track,
                 'track_start_time',
+                hr_before_landfall,
                 prescribed,
                 [shp_US, ne_low.unary_union],
             )
@@ -272,6 +276,7 @@ def main(args):
             perturb_start = get_perturb_timestamp_in_track(
                 track,
                 'datetime',
+                hr_before_landfall,
                 prescribed,
                 [shp_US, ne_low.unary_union],
             )
