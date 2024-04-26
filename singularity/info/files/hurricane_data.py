@@ -54,13 +54,13 @@ def trackstart_from_file(
     if nhc_code.lower() not in leadtime_table.index:
         return None
 
-    storm_all_times = leadtime_table.loc[nhc_code.lower()].dropna()
+    storm_all_times = leadtime_table.loc[[nhc_code.lower()]].dropna()
     if len(storm_all_times) > 1:
         storm_all_times = storm_all_times.iloc[0]
     if leadtime not in storm_all_times:
         return None
 
-    return storm_all_times[leadtime]
+    return storm_all_times[leadtime].item()
 
 
 def get_perturb_timestamp_in_track(
@@ -82,7 +82,7 @@ def get_perturb_timestamp_in_track(
 
     track_data = track.data
 
-    assert len(track.advisory.unique()) == 1
+    assert len(set(track.advisories)) == 1
 
     perturb_start = track_data.track_start_time.iloc[0]
     if prescribed is not None:
@@ -169,6 +169,7 @@ def main(args):
     if use_past_forecast or is_current_storm:
         logger.info("Fetching a-deck track info...")
 
+        advisory = 'OFCL'
         if not local_track_file.exists():
             # Find and pick a single advisory based on priority
             temp_track = event.track(file_deck='a')
@@ -189,12 +190,18 @@ def main(args):
             track = VortexTrack(nhc_code, file_deck='a', advisories=[advisory])
 
         else:  # read from preprocessed file
+            advisory = 'OFCL'
+
             # If a file exists, use the local file
             track_raw = pd.read_csv(local_track_file, header=None)
             assert len(track_raw[4].unique()) == 1
             track_raw[4] = 'OFCL'
 
-            track = VortexTrack(track_raw, file_deck='a', advisories=['OFCL'])
+            with tempfile.NamedTemporaryFile() as tmp:
+                track_raw.to_csv(tmp.name, index=None)
+                track = VortexTrack(
+                    tmp.name, file_deck='a', advisories=[advisory]
+                )
 
 
         forecast_start = None  # TODO?
