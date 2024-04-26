@@ -13,13 +13,14 @@ import argparse
 import tempfile
 import numpy as np
 from datetime import datetime, timedelta
+from typing import Optional, List
 
 import pandas as pd
 import geopandas as gpd
 from searvey.coops import COOPS_TidalDatum
 from searvey.coops import COOPS_TimeZone
 from searvey.coops import COOPS_Units
-from shapely.geometry import box
+from shapely.geometry import box, base
 from stormevents import StormEvent
 from stormevents.nhc import VortexTrack
 
@@ -32,6 +33,97 @@ logging.basicConfig(
     datefmt='%Y-%m-%d:%H:%M:%S')
 
 
+
+def trackstart_from_file(
+    leadtime_file: Optional[pathlib.Path],
+    nhc_code: str,
+    leadtime: float,
+) -> Optional[datetime]:
+    if leadtime_file is None or not leadtime_file.is_file():
+        return None
+
+    leadtime_dict = pd.read_json(leadtime_file, orient='index')
+    leadtime_table = leadtime_dict.drop(columns='leadtime').merge(
+        leadtime_dict.leadtime.apply(
+            lambda x: pd.Series({v: k for k, v in x.items()})
+        ).apply(pd.to_datetime, format='%Y%m%d%H'),
+        left_index=True,
+        right_index=True
+    ).set_index('ALnumber')
+
+    if nhc_code.lower() not in leadtime_table.index:
+        return None
+
+    storm_all_times = leadtime_table.loc[nhc_code.lower()].dropna()
+    if len(storm_all_times) > 1:
+        storm_all_times = storm_all_times.iloc[0]
+    if leadtime not in storm_all_times:
+        return None
+
+    return storm_all_times[leadtime]
+
+
+def get_perturb_timestamp_in_track(
+    track: VortexTrack,
+    time_col: 'str',
+    prescribed: Optional[datetime],
+    land_shapes: List[base.BaseGeometry],
+) -> Optional[datetime]:
+    '''
+    For best track pick the best track time that is at least
+    leadtime before the time besttrack is on land. But for forecast
+    pick the track that has a fcst000 date which is 
+    at least leadtime before the time that the track is on land.
+
+    Note that for a single advisory forecast, there are still MULTIPLE
+    tracks each with a different START DATE; while for best track
+    there's a SINGLE track with a start date equal to the beginning.
+    '''
+
+    track_data = track.data
+
+    assert len(track.advisory.unique()) == 1
+
+    perturb_start = track_data.track_start_time.iloc[0]
+    if prescribed is not None:
+        times = track_data[time_col].unique()
+        leastdiff_idx = np.argmin(abs(times - prescribed))
+        perturb_start = times[leastdiff_idx]
+        return perturb_start
+
+    for shp in land_shapes:
+        tracks_onland = track_data[track_data.intersects(shp)]
+        if not tracks_onland.empty:
+            break
+    else:
+        # If track is never on input land polygons
+        return perturb_start
+
+
+    # Find tracks that started closest and prior to specified leadtime
+    # For each track start date, pick the FIRST time it's on land
+    candidates = tracks_onland.groupby('track_start_time').nth(0).reset_index()
+    dt = timedelta(hours=hr_before_landfall)
+
+    # Pick LAST track that starts BEFORE the given leadtime among
+    # the candidates (start time and landfall time)
+    candidates['timediff'] = candidates.datetime - candidates.track_start_time
+    times_start_landfall = candidates[
+        candidates['timediff'] >= dt
+    ][
+        'track_start_time', 'datetime'
+    ].iloc[-1]
+    picked_track = track_data[
+        track_data.track_start_time == times_start_landfall.track_start_time]
+
+    # Get the chosen track's timestamp closest to specifid leadtime
+    perturb_start = picked_track.loc[
+        times_start_landfall.datetime - picked_track.datetime >= dt
+    ].iloc[-1]
+
+    return perturb_start
+
+
 def main(args):
 
     name_or_code = args.name_or_code
@@ -41,9 +133,10 @@ def main(args):
     swath_out = args.swath_outpath
     sta_dat_out = args.station_data_outpath
     sta_loc_out = args.station_location_outpath
-    is_past_forecast = args.past_forecast
+    use_past_forecast = args.past_forecast
     hr_before_landfall = args.hours_before_landfall
     lead_times = args.lead_times
+    track_dir = args.track_dir
 
     if hr_before_landfall < 0:
         hr_before_landfall = 48
@@ -59,31 +152,29 @@ def main(args):
         event = StormEvent(name_or_code, year)
     nhc_code = event.nhc_code
     storm_name = event.name
-    logger.info("Fetching a-deck track info...")
 
-    prescribed = None
-    if lead_times is not None and lead_times.is_file():
-        leadtime_dict = pd.read_json(lead_times, orient='index')
-        leadtime_table = leadtime_dict.drop(columns='leadtime').merge(
-            leadtime_dict.leadtime.apply(
-                lambda x: pd.Series({v: k for k, v in x.items()})
-            ).apply(pd.to_datetime, format='%Y%m%d%H'),
-            left_index=True,
-            right_index=True
-        ).set_index('ALnumber')
+    prescribed = trackstart_from_file(
+        lead_times, nhc_code, hr_before_landfall
+    )
 
-        if nhc_code.lower() in leadtime_table.index:
-            storm_all_times = leadtime_table.loc[nhc_code.lower()].dropna()
-            if len(storm_all_times.shape) > 1:
-                storm_all_times = storm_all_times.iloc[0]
-            if hr_before_landfall in storm_all_times:
-                prescribed = storm_all_times[hr_before_landfall]
-
-    # TODO: Get user input for whether its forecast or now!
+    # TODO: Get user input for whether it's forecast or now!
     now = datetime.now()
+    is_current_storm = (now - event.start_date < timedelta(days=30))
+
     df_dt = pd.DataFrame(columns=['date_time'])
-    if (is_past_forecast or (now - event.start_date < timedelta(days=30))):
+    
+    local_track_file = track_dir / f'a{nhc_code.lower()}.dat'
+    if use_past_forecast or is_current_storm:
+        logger.info("Fetching a-deck track info...")
+        # Find and pick a single advisory based on priority
         temp_track = event.track(file_deck='a')
+        # If a file exists, use the local file
+#        if local_track_file.exists():
+#            track_raw = pd.read_csv(local_track_file, header=None)
+#            # Handle special case
+#            track_raw[track_raw[4] == 'RMWP', 4] = 'OFCL'
+#            track_raw.to_csv(tempfile, index=None)
+#            temp_track = VortexTrack(local_track_file, file_deck='a')
         adv_avail = temp_track.unfiltered_data.advisory.unique()
         adv_order = ['OFCL', 'HWRF', 'HMON', 'CARQ']
         advisory = adv_avail[0]
@@ -92,6 +183,7 @@ def main(args):
                 advisory = adv
                 break
 
+        # TODO: THIS IS NO LONGER RELEVANT IF WE FAKE RMWP AS OFCL!
         if advisory == "OFCL" and "CARQ" not in adv_avail:
             raise ValueError(
                 "OFCL advisory needs CARQ for fixing missing variables!"
@@ -100,33 +192,42 @@ def main(args):
         # NOTE: Track taken from `StormEvent` object is up to now only.
         # See GitHub issue #57 for StormEvents
         track = VortexTrack(nhc_code, file_deck='a', advisories=[advisory])
+        if local_track_file.exists():
+            track = VortexTrack(
+                local_track_file, file_deck='a', advisories=[advisory]
+            )
 
+        if is_current_storm:
+            # Get the latest track forecast
+            forecast_start = track.data.track_start_time.max()
+            gdf_track = track.data[track.data.track_start_time == forecast_start]
+            gdf_track = pd.concat((
+                track.data[
+                    (track.data.track_start_time < forecast_start)
+                    & (track.data.forecast_hours == 0)
+                ],
+                gdf_track
+            ))
 
-        if is_past_forecast:
+            # Put both dates as now(), for pyschism to setup forecast
+            df_dt['date_time'] = (
+                track.start_date, track.end_date, forecast_start
+            )
+
+            coops_ssh = None
+
+        else: #if use_past_forecast:
 
             logger.info(
                 f"Creating {advisory} track for {hr_before_landfall}"
                 +" hours before landfall forecast..."
             )
-            if prescribed is not None:
-                start_times = track.data.track_start_time.unique()
-                leastdiff_idx = np.argmin(abs(start_times - prescribed))
-                forecast_start = start_times[leastdiff_idx]
-
-
-            else:
-                onland_adv_tracks = track.data[track.data.intersects(shp_US)]
-                if onland_adv_tracks.empty:
-                    # If it doesn't landfall on US, check with other countries
-                    onland_adv_tracks = track.data[
-                        track.data.intersects(ne_low.unary_union)
-                    ]
-
-                candidates = onland_adv_tracks.groupby('track_start_time').nth(0).reset_index()
-                candidates['timediff'] = candidates.datetime - candidates.track_start_time
-                forecast_start = candidates[
-                    candidates['timediff'] >= timedelta(hours=hr_before_landfall)
-                ].track_start_time.iloc[-1]
+            forecast_start = get_perturb_timestamp_in_track(
+                track,
+                'track_start_time',
+                prescribed,
+                [shp_US, ne_low.unary_union],
+            )
 
             gdf_track = track.data[track.data.track_start_time == forecast_start]
             # Append before track from previous forecasts:
@@ -150,24 +251,6 @@ def main(args):
                 time_zone=COOPS_TimeZone.GMT,
             )
 
-        else:
-            # Get the latest track forecast
-            forecast_start = track.data.track_start_time.max()
-            gdf_track = track.data[track.data.track_start_time == forecast_start]
-            gdf_track = pd.concat((
-                track.data[
-                    (track.data.track_start_time < forecast_start)
-                    & (track.data.forecast_hours == 0)
-                ],
-                gdf_track
-            ))
-
-            # Put both dates as now(), for pyschism to setup forecast
-            df_dt['date_time'] = (
-                track.start_date, track.end_date, forecast_start
-            )
-
-            coops_ssh = None
 
         # NOTE: Fake besttrack: Since PySCHISM supports "BEST" track
         # files for its parametric forcing, write track as "BEST" after
@@ -175,6 +258,7 @@ def main(args):
         # NOTE: Fake best track AFTER perturbation
 #        gdf_track.advisory = 'BEST'
 #        gdf_track.forecast_hours = 0
+        # Fill missing name column if any
         gdf_track['name'] = storm_name
         track = VortexTrack(storm=gdf_track, file_deck='a', advisories=[advisory])
 
@@ -204,22 +288,12 @@ def main(args):
 
         perturb_start = track.start_date
         if hr_before_landfall:
-            if prescribed is not None:
-                # NOTE: track_start_time is the genesis for best track
-                times = track.data.datetime.unique()
-                leastdiff_idx = np.argmin(abs(times - prescribed))
-                perturb_start = times[leastdiff_idx]
-            else:
-                onland_adv_tracks = track.data[track.data.intersects(shp_US)]
-                if onland_adv_tracks.empty:
-                    # If it doesn't landfall on US, check with other countries
-                    onland_adv_tracks = track.data[
-                        track.data.intersects(ne_low.unary_union)
-                    ]
-                onland_date = onland_adv_tracks.datetime.iloc[0]
-                perturb_start = track.data[
-                    onland_date - track.data.datetime >= timedelta(hours=hr_before_landfall)
-                ].datetime.iloc[-1]
+            perturb_start = get_perturb_timestamp_in_track(
+                track,
+                'datetime',
+                prescribed,
+                [shp_US, ne_low.unary_union],
+            )
 
         df_dt['date_time'] = (
             track.start_date, track.end_date, perturb_start
@@ -320,6 +394,12 @@ if __name__ == '__main__':
         "--lead-times",
         type=pathlib.Path,
         help="Helper file for prescribed lead times",
+    )
+
+    parser.add_argument(
+        "--track-dir",
+        type=pathlib.Path,
+        help="Existing adjusted track directory",
     )
 
     args = parser.parse_args()
