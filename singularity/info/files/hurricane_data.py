@@ -136,7 +136,7 @@ def main(args):
     use_past_forecast = args.past_forecast
     hr_before_landfall = args.hours_before_landfall
     lead_times = args.lead_times
-    track_dir = args.track_dir
+    track_dir = args.preprocessed_tracks_dir
 
     if hr_before_landfall < 0:
         hr_before_landfall = 48
@@ -163,61 +163,47 @@ def main(args):
 
     df_dt = pd.DataFrame(columns=['date_time'])
     
+    # All preprocessed tracks are treated as OFCL
     local_track_file = track_dir / f'a{nhc_code.lower()}.dat'
+
     if use_past_forecast or is_current_storm:
         logger.info("Fetching a-deck track info...")
-        # Find and pick a single advisory based on priority
-        temp_track = event.track(file_deck='a')
-        # If a file exists, use the local file
-#        if local_track_file.exists():
-#            track_raw = pd.read_csv(local_track_file, header=None)
-#            # Handle special case
-#            track_raw[track_raw[4] == 'RMWP', 4] = 'OFCL'
-#            track_raw.to_csv(tempfile, index=None)
-#            temp_track = VortexTrack(local_track_file, file_deck='a')
-        adv_avail = temp_track.unfiltered_data.advisory.unique()
-        adv_order = ['OFCL', 'HWRF', 'HMON', 'CARQ']
-        advisory = adv_avail[0]
-        for adv in adv_order:
-            if adv in adv_avail:
-                advisory = adv
-                break
 
-        # TODO: THIS IS NO LONGER RELEVANT IF WE FAKE RMWP AS OFCL!
-        if advisory == "OFCL" and "CARQ" not in adv_avail:
-            raise ValueError(
-                "OFCL advisory needs CARQ for fixing missing variables!"
-            )
+        if not local_track_file.exists():
+            # Find and pick a single advisory based on priority
+            temp_track = event.track(file_deck='a')
+            adv_avail = temp_track.unfiltered_data.advisory.unique()
+            adv_order = ['OFCL', 'HWRF', 'HMON', 'CARQ']
+            advisory = adv_avail[0]
+            for adv in adv_order:
+                if adv in adv_avail:
+                    advisory = adv
+                    break
 
-        # NOTE: Track taken from `StormEvent` object is up to now only.
-        # See GitHub issue #57 for StormEvents
-        track = VortexTrack(nhc_code, file_deck='a', advisories=[advisory])
-        if local_track_file.exists():
-            track = VortexTrack(
-                local_track_file, file_deck='a', advisories=[advisory]
-            )
+            # TODO: THIS IS NO LONGER RELEVANT IF WE FAKE RMWP AS OFCL!
+            if advisory == "OFCL" and "CARQ" not in adv_avail:
+                raise ValueError(
+                    "OFCL advisory needs CARQ for fixing missing variables!"
+                )
 
+            track = VortexTrack(nhc_code, file_deck='a', advisories=[advisory])
+
+        else:  # read from preprocessed file
+            # If a file exists, use the local file
+            track_raw = pd.read_csv(local_track_file, header=None)
+            assert len(track_raw[4].unique()) == 1
+            track_raw[4] = 'OFCL'
+
+            track = VortexTrack(track_raw, file_deck='a', advisories=['OFCL'])
+
+
+        forecast_start = None  # TODO?
         if is_current_storm:
             # Get the latest track forecast
             forecast_start = track.data.track_start_time.max()
-            gdf_track = track.data[track.data.track_start_time == forecast_start]
-            gdf_track = pd.concat((
-                track.data[
-                    (track.data.track_start_time < forecast_start)
-                    & (track.data.forecast_hours == 0)
-                ],
-                gdf_track
-            ))
-
-            # Put both dates as now(), for pyschism to setup forecast
-            df_dt['date_time'] = (
-                track.start_date, track.end_date, forecast_start
-            )
-
             coops_ssh = None
 
         else: #if use_past_forecast:
-
             logger.info(
                 f"Creating {advisory} track for {hr_before_landfall}"
                 +" hours before landfall forecast..."
@@ -229,21 +215,7 @@ def main(args):
                 [shp_US, ne_low.unary_union],
             )
 
-            gdf_track = track.data[track.data.track_start_time == forecast_start]
-            # Append before track from previous forecasts:
-            gdf_track = pd.concat((
-                track.data[
-                    (track.data.track_start_time < forecast_start)
-                    & (track.data.forecast_hours == 0)
-                ],
-                gdf_track
-            ))
-            df_dt['date_time'] = (
-                forecast_start - timedelta(days=2), track.end_date, forecast_start
-            )
-
-
-            logger.info("Fetching water level measurements from COOPS stations...")
+            logger.info("Fetching water levels for COOPS stations...")
             coops_ssh = event.coops_product_within_isotach(
                 product='water_level', wind_speed=34,
                 datum=COOPS_TidalDatum.NAVD,
@@ -251,20 +223,28 @@ def main(args):
                 time_zone=COOPS_TimeZone.GMT,
             )
 
+        df_dt['date_time'] = (
+            forecast_start - timedelta(days=2), track.end_date, forecast_start
+        )
 
-        # NOTE: Fake besttrack: Since PySCHISM supports "BEST" track
-        # files for its parametric forcing, write track as "BEST" after
-        # fixing the OFCL by CARQ through StormEvents
-        # NOTE: Fake best track AFTER perturbation
-#        gdf_track.advisory = 'BEST'
-#        gdf_track.forecast_hours = 0
+        gdf_track = track.data[track.data.track_start_time == forecast_start]
+        # Prepend track from previous 0hr forecasts:
+        gdf_track = pd.concat((
+            track.data[
+                (track.data.track_start_time < forecast_start)
+                & (track.data.forecast_hours == 0)
+            ],
+            gdf_track
+        ))
+
+        # NOTE: Fake best track for PySCHISM AFTER perturbation
         # Fill missing name column if any
         gdf_track['name'] = storm_name
-        track = VortexTrack(storm=gdf_track, file_deck='a', advisories=[advisory])
+        track = VortexTrack(
+            storm=gdf_track, file_deck='a', advisories=[advisory]
+        )
 
         windswath_dict = track.wind_swaths(wind_speed=34)
-        # NOTE: Fake best track AFTER perturbation
-#        windswaths = windswath_dict['BEST']  # Faked BEST
         windswaths = windswath_dict[advisory]
         logger.info(f"Fetching {advisory} windswath...")
         windswath_time = min(pd.to_datetime(list(windswaths.keys())))
@@ -272,19 +252,13 @@ def main(args):
             windswath_time.strftime("%Y%m%dT%H%M%S")
         ]
 
-    else:
+    else: # Best track
 
         logger.info("Fetching b-deck track info...")
 
 
         logger.info("Fetching BEST windswath...")
         track = event.track(file_deck='b')
-        # Drop duplicate rows based on isotach and time without minutes
-        # (PaHM doesn't take minutes into account)
-        gdf_track = track.data
-        gdf_track.datetime = gdf_track.datetime.dt.floor('h')
-        gdf_track = gdf_track.drop_duplicates(subset=['datetime', 'isotach_radius'], keep='last')
-        track = VortexTrack(storm=gdf_track, file_deck='b', advisories=['BEST'])
 
         perturb_start = track.start_date
         if hr_before_landfall:
@@ -295,20 +269,6 @@ def main(args):
                 [shp_US, ne_low.unary_union],
             )
 
-        df_dt['date_time'] = (
-            track.start_date, track.end_date, perturb_start
-        )
-
-        windswath_dict = track.wind_swaths(wind_speed=34)
-        # NOTE: event.start_date (first advisory date) doesn't
-        # necessarily match the windswath key which comes from track
-        # start date for the first advisory (at least in 2021!)
-        windswaths = windswath_dict['BEST']
-        latest_advistory_stamp = max(pd.to_datetime(list(windswaths.keys())))
-        windswath = windswaths[
-            latest_advistory_stamp.strftime("%Y%m%dT%H%M%S")
-        ]
-
         logger.info("Fetching water level measurements from COOPS stations...")
         coops_ssh = event.coops_product_within_isotach(
             product='water_level', wind_speed=34,
@@ -316,6 +276,28 @@ def main(args):
             units=COOPS_Units.METRIC,
             time_zone=COOPS_TimeZone.GMT,
         )
+
+        df_dt['date_time'] = (
+            track.start_date, track.end_date, perturb_start
+        )
+
+        # Drop duplicate rows based on isotach and time without minutes
+        # (PaHM doesn't take minutes into account)
+        gdf_track = track.data
+        gdf_track.datetime = gdf_track.datetime.dt.floor('h')
+        gdf_track = gdf_track.drop_duplicates(
+            subset=['datetime', 'isotach_radius'], keep='last'
+        )
+        track = VortexTrack(
+            storm=gdf_track, file_deck='b', advisories=['BEST']
+        )
+
+        windswath_dict = track.wind_swaths(wind_speed=34)
+        windswaths = windswath_dict['BEST']
+        latest_advistory_stamp = max(pd.to_datetime(list(windswaths.keys())))
+        windswath = windswaths[
+            latest_advistory_stamp.strftime("%Y%m%dT%H%M%S")
+        ]
 
     logger.info("Writing relevant data to files...")
     df_dt.to_csv(date_out)
@@ -397,7 +379,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        "--track-dir",
+        "--preprocessed-tracks-dir",
         type=pathlib.Path,
         help="Existing adjusted track directory",
     )

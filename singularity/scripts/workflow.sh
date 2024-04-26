@@ -36,10 +36,12 @@ singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/info.sif \
     --station-data-outpath $run_dir/coops_ssh/stations.nc \
     --station-location-outpath $run_dir/setup/stations.csv \
     $(if [ $past_forecast == 1 ]; then echo "--past-forecast"; fi) \
-    --hours-before-landfall $hr_prelandfall \
-    --lead-times $L_LEADTIMES_DATASET \
+    --hours-before-landfall "$hr_prelandfall" \
+    --lead-times "$L_LEADTIMES_DATASET" \
+    --preprocessed-tracks-dir "$L_TRACK_DIR" \
     $storm $year
 
+exit 0
 
 MESH_KWDS=""
 if [ $subset_mesh == 1 ]; then
