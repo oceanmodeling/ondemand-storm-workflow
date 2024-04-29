@@ -196,7 +196,7 @@ def main(args):
             advisory = 'OFCL'
 
             # If a file exists, use the local file
-            track_raw = pd.read_csv(local_track_file, header=None)
+            track_raw = pd.read_csv(local_track_file, header=None, dtype=str)
             assert len(track_raw[4].unique()) == 1
             track_raw[4] = advisory
 
@@ -244,7 +244,7 @@ def main(args):
         gdf_track = pd.concat((
             track.data[
                 (track.data.track_start_time < forecast_start)
-                & (track.data.forecast_hours == 0)
+                & (track.data.forecast_hours.astype(int) == 0)
             ],
             gdf_track
         ))
