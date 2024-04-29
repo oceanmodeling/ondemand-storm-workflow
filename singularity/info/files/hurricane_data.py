@@ -122,7 +122,7 @@ def get_perturb_timestamp_in_track(
         times_start_landfall.datetime - picked_track.datetime >= dt
     ].iloc[-1]
 
-    return perturb_start
+    return perturb_start[time_col]
 
 
 def main(args):
@@ -198,10 +198,11 @@ def main(args):
             # If a file exists, use the local file
             track_raw = pd.read_csv(local_track_file, header=None)
             assert len(track_raw[4].unique()) == 1
-            track_raw[4] = 'OFCL'
+            track_raw[4] = advisory
 
             with tempfile.NamedTemporaryFile() as tmp:
-                track_raw.to_csv(tmp.name, index=None)
+                # TODO: Spaces get messed up!
+                track_raw.to_csv(tmp.name, header=False, index=False)
                 track = VortexTrack(
                     tmp.name, file_deck='a', advisories=[advisory]
                 )
