@@ -23,6 +23,11 @@ from searvey.coops import COOPS_Units
 from shapely.geometry import box, base
 from stormevents import StormEvent
 from stormevents.nhc import VortexTrack
+from stormevents.nhc.track import (
+    combine_tracks,
+    correct_ofcl_based_on_carq_n_hollandb,
+    separate_tracks,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -194,17 +199,31 @@ def main(args):
 
         else:  # read from preprocessed file
             advisory = 'OFCL'
-
+            
             # If a file exists, use the local file
             track_raw = pd.read_csv(local_track_file, header=None, dtype=str)
             assert len(track_raw[4].unique()) == 1
             track_raw[4] = advisory
 
             with tempfile.NamedTemporaryFile() as tmp:
-                # TODO: Spaces get messed up!
                 track_raw.to_csv(tmp.name, header=False, index=False)
-                track = VortexTrack(
+
+                unfixed_track = VortexTrack(
                     tmp.name, file_deck='a', advisories=[advisory]
+                )
+                carq_track = event.track(file_deck='a', advisories=['CARQ'])
+                unfix_dict = {
+                    **separate_tracks(unfixed_track.data),
+                    **separate_tracks(carq_track.data),
+                }
+
+                fix_dict = correct_ofcl_based_on_carq_n_hollandb(unfix_dict)
+                fix_track = combine_tracks(fix_dict)
+
+                track = VortexTrack(
+                    fix_track[fix_track.advisory == advisory],
+                    file_deck='a',
+                    advisories=[advisory]
                 )
 
 
