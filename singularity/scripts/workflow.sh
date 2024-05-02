@@ -41,7 +41,6 @@ singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/info.sif \
     --preprocessed-tracks-dir "$L_TRACK_DIR" \
     $storm $year
 
-exit 0
 
 MESH_KWDS=""
 if [ $subset_mesh == 1 ]; then
