@@ -218,6 +218,8 @@ def main(args):
         ),
             
     )
+    ds_ROC.to_netcdf(os.path.join(save_dir, f"{storm_name}_{storm_year}_{leadtime}hr_leadtime_POD_FAR.nc"))
+    
     # plot ROC curves
     marker_list=['s','x']
     linestyle_list=['dashed','dotted']
