@@ -128,7 +128,7 @@ def main(args):
     model_start_time = datetime.strptime(date_1, '%Y%m%d%H')
     model_end_time = datetime.strptime(date_2, '%Y%m%d%H')
     perturb_start = datetime.strptime(date_3, '%Y%m%d%H')
-    spinup_time = timedelta(days=2)
+    spinup_time = timedelta(days=8)
 
     forcing_configurations = []
     forcing_configurations.append(
@@ -179,7 +179,7 @@ def main(args):
         variables=[
             'cross_track',
             'along_track',
-            'radius_of_maximum_winds',
+            'radius_of_maximum_winds', # TODO: add option for persistent
             'max_sustained_wind_speed',
         ],
         sample_from_distribution=args.sample_from_distribution,

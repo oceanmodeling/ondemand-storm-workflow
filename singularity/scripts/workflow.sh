@@ -13,6 +13,12 @@ export PATH=$L_SCRIPT_DIR:$PATH
 # Processing...
 mkdir -p $TMPDIR
 
+function version {
+    logfile=$1
+    echo -n "`basename $2`: " >> $logfile
+    singularity run $2 pip list | grep $3 >> $logfile
+}
+
 function init {
     local run_dir=/nhc/Soroosh.Mani/runs/$1
     mkdir $run_dir
@@ -21,6 +27,12 @@ function init {
     mkdir $run_dir/setup
     mkdir $run_dir/nhc_track
     mkdir $run_dir/coops_ssh
+
+    logfile=$run_dir/versions.info
+    version $logfile $L_IMG_DIR/info.sif stormevents
+    version $logfile $L_IMG_DIR/prep.sif stormevents
+    version $logfile $L_IMG_DIR/prep.sif ensembleperturbation
+#    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
     echo $run_dir
 }
 
@@ -30,6 +42,7 @@ run_dir=$(init $tag)
 echo $run_dir
 
 singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/info.sif \
+    hurricane_data \
     --date-range-outpath $run_dir/setup/dates.csv \
     --track-outpath $run_dir/nhc_track/hurricane-track.dat \
     --swath-outpath $run_dir/windswath \

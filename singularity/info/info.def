@@ -1,6 +1,5 @@
 BootStrap: docker
-#From: centos:centos7.8.2003
-From: continuumio/miniconda3:23.3.1-0-alpine
+From: continuumio/miniconda3:24.3.0-0
 
 %files
     environment.yml 
@@ -10,8 +9,7 @@ From: continuumio/miniconda3:23.3.1-0-alpine
     export PYTHONPATH=/scripts
 
 %post
-#    yum update -y && yum upgrade -y
-    apk update && apk upgrade && apk add git
+    apt update && apt upgrade -y  && apt install -y git
 
     conda install mamba -n base -c conda-forge 
     conda install libarchive -n base -c conda-forge
@@ -24,11 +22,11 @@ From: continuumio/miniconda3:23.3.1-0-alpine
 
 
     conda clean --all
-    apk del git
+    apt remove -y git
 
 
 %runscript
-    conda run -n info --no-capture-output python -m hurricane_data $*
+    conda run -n info --no-capture-output python -m $*
 
 
 %labels
