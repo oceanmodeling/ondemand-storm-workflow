@@ -123,6 +123,7 @@ export PREP_KWDS
 setup_id=$(sbatch \
     --output "${run_dir}/slurm/slurm-%j.setup.out" \
     --wait \
+    --job-name=prep_$tag \
     --parsable \
     --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year,IMG="$L_IMG_DIR/prep.sif" \
     $L_SCRIPT_DIR/prep.sbatch \
