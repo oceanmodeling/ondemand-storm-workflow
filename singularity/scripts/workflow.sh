@@ -38,6 +38,8 @@ function init {
 
 uuid=$(uuidgen)
 tag=${storm}_${year}_${uuid}
+suffix=$3
+if [ ! -z $suffix ]; then tag=${tag}_${suffix}; fi
 run_dir=$(init $tag)
 echo $run_dir
 
