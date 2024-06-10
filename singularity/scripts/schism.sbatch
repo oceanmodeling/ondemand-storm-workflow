@@ -10,10 +10,14 @@ module load $MODULES
 export MV2_ENABLE_AFFINITY=0
 ulimit -s unlimited
 
+date
 set -ex
 
 pushd ${SCHISM_DIR}
 mkdir -p outputs
+
+singularity exec ${SINGULARITY_BINDFLAGS} ${IMG} \
+    ${SCHISM_EXEC} -v > outputs/solver.version
 mpirun -np 36 singularity exec ${SINGULARITY_BINDFLAGS} ${IMG} \
     ${SCHISM_EXEC} 4
 
