@@ -22,6 +22,7 @@ export MV2_ENABLE_AFFINITY=0
 ulimit -s unlimited
 
 date
+$BIN_DIR/pschism_PAHM_TVD-VL -v > outputs/solver.version
 mpirun -np $SLURM_NTASKS $BIN_DIR/pschism_PAHM_TVD-VL 4
 
 if [ $? -eq 0 ]; then

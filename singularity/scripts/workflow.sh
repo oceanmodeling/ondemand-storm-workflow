@@ -23,6 +23,7 @@ function init {
     local run_dir=/nhc/Soroosh.Mani/runs/$1
     mkdir $run_dir
 #    mkdir $run_dir/downloads
+    mkdir $run_dir/slurm
     mkdir $run_dir/mesh
     mkdir $run_dir/setup
     mkdir $run_dir/nhc_track
@@ -33,6 +34,8 @@ function init {
     version $logfile $L_IMG_DIR/prep.sif stormevents
     version $logfile $L_IMG_DIR/prep.sif ensembleperturbation
 #    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
+    echo "SCHISM: see solver.version each outputs dir" >> $logfile
+
     echo $run_dir
 }
 
@@ -80,7 +83,12 @@ else
 fi
 MESH_KWDS+=" --out ${run_dir}/mesh"
 export MESH_KWDS
-sbatch --wait --job-name=mesh_$tag --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsmesh.sif $L_SCRIPT_DIR/mesh.sbatch
+sbatch \
+    --output "${run_dir}/slurm/slurm-%j.mesh.out" \
+    --wait \
+    --job-name=mesh_$tag \
+    --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsmesh.sif \
+    $L_SCRIPT_DIR/mesh.sbatch
 
 
 echo "Download necessary data..."
@@ -113,6 +121,7 @@ PREP_KWDS+=" --pahm-model $pahm_model"
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \
+    --output "${run_dir}/slurm/slurm-%j.setup.out" \
     --wait \
     --job-name=prep_$tag \
     --parsable \
@@ -128,6 +137,7 @@ SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
 SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --parsable \
+    --output "${run_dir}/slurm/slurm-%j.spinup.out" \
     --job-name=spinup_$tag \
     -d afterok:$setup_id \
     --export=$SCHISM_SHARED_ENV,SCHISM_DIR="$run_dir/setup/ensemble.dir/spinup",SCHISM_EXEC="$spinup_exec" \
@@ -138,6 +148,7 @@ joblist=""
 for i in $run_dir/setup/ensemble.dir/runs/*; do
     jobid=$(
         sbatch --parsable -d afterok:$spinup_id \
+        --output "${run_dir}/slurm/slurm-%j.run-$(basename $i).out" \
         --job-name="run_$(basename $i)_$tag" \
         --export=$SCHISM_SHARED_ENV,SCHISM_DIR="$i",SCHISM_EXEC="$hotstart_exec" \
         $L_SCRIPT_DIR/schism.sbatch
@@ -150,6 +161,7 @@ done
 # Post processing
 sbatch \
     --parsable \
+    --output "${run_dir}/slurm/slurm-%j.post.out" \
     --job-name=post_$tag \
     -d afterok${joblist} \
     --export=ALL,IMG="$L_IMG_DIR/prep.sif",ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
