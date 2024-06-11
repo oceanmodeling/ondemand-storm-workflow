@@ -42,7 +42,7 @@ function init {
         d=$run_dir/slurm/${i##*\/}
         cp $i $d
         if [ ! -z $hpc_partition ]; then
-            add_sbatch_header "--parition=$hpc_partition" $d
+            add_sbatch_header "--partition=$hpc_partition" $d
         fi
         if [ ! -z $hpc_account ]; then
             add_sbatch_header "--account=$hpc_account" $d
@@ -53,7 +53,7 @@ function init {
     version $logfile $L_IMG_DIR/info.sif stormevents
     version $logfile $L_IMG_DIR/prep.sif stormevents
     version $logfile $L_IMG_DIR/prep.sif ensembleperturbation
-    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
+#    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
 
     echo $run_dir
