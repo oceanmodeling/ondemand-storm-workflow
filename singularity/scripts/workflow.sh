@@ -154,9 +154,9 @@ echo "Launching runs"
 SCHISM_SHARED_ENV=""
 SCHISM_SHARED_ENV+="ALL"
 SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
-SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
+SCHISM_SHARED_ENV+=",MODULES=\"$L_SOLVE_MODULES\""
 spinup_id=$(sbatch \
-    --nodes $solver_nnodes --ntasks $solver_ntasks \
+    --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
     --parsable \
     --output "${run_dir}/slurm/slurm-%j.spinup.out" \
     --job-name=spinup_$tag \
