@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --parsable
-#SBATCH --nodes=1
 #SBATCH --exclusive
-#SBATCH --time=02:00:00
+#SBATCH --time=00:30:00
+#SBATCH --nodes=1
 
 set -ex
 

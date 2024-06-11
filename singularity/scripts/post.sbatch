@@ -1,9 +1,7 @@
 #!/bin/bash
 #SBATCH --parsable
+#SBATCH --time=05:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=36
-#SBATCH --cpus-per-task=1
-#SBATCH --time=04:00:00
 
 set -ex
 

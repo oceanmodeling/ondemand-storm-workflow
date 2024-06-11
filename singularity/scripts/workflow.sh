@@ -7,11 +7,15 @@ source $THIS_SCRIPT_DIR/input.conf
 
 if [ $use_wwm == 1 ]; then hotstart_exec='pschism_WWM_PAHM_TVD-VL'; fi
 
-# PATH
-export PATH=$L_SCRIPT_DIR:$PATH
-
 # Processing...
 mkdir -p $TMPDIR
+
+# CHECK VER
+### pip install --quiet --report - --dry-run --no-deps -r requirements.txt | jq -r '.install'
+
+# CHECK BIN
+# combine_hotstart7
+# pschism ...
 
 function version {
     logfile=$1
@@ -19,21 +23,37 @@ function version {
     singularity run $2 pip list | grep $3 >> $logfile
 }
 
+function add_sbatch_header {
+    fnm=${2##*\/}
+    awk '!found && /^#SBATCH/ { print "#SBATCH '$1'"; found=1 } 1' $2 > /tmp/$fnm
+    mv /tmp/$fnm $2
+}
+
 function init {
-    local run_dir=/nhc/Soroosh.Mani/runs/$1
+    local run_dir=$RUN_OUT/$1
     mkdir $run_dir
-#    mkdir $run_dir/downloads
     mkdir $run_dir/slurm
     mkdir $run_dir/mesh
     mkdir $run_dir/setup
     mkdir $run_dir/nhc_track
     mkdir $run_dir/coops_ssh
 
+    for i in $L_SCRIPT_DIR/*.sbatch; do
+        d=$run_dir/slurm/${i##*\/}
+        cp $i $d
+        if [ ! -z $hpc_partition ]; then
+            add_sbatch_header "--parition=$hpc_partition" $d
+        fi
+        if [ ! -z $hpc_account ]; then
+            add_sbatch_header "--account=$hpc_account" $d
+        fi
+    done
+
     logfile=$run_dir/versions.info
     version $logfile $L_IMG_DIR/info.sif stormevents
     version $logfile $L_IMG_DIR/prep.sif stormevents
     version $logfile $L_IMG_DIR/prep.sif ensembleperturbation
-#    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
+    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
 
     echo $run_dir
@@ -88,7 +108,7 @@ sbatch \
     --wait \
     --job-name=mesh_$tag \
     --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsmesh.sif \
-    $L_SCRIPT_DIR/mesh.sbatch
+    $run_dir/slurm/mesh.sbatch
 
 
 echo "Download necessary data..."
@@ -126,7 +146,7 @@ setup_id=$(sbatch \
     --job-name=prep_$tag \
     --parsable \
     --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year,IMG="$L_IMG_DIR/prep.sif" \
-    $L_SCRIPT_DIR/prep.sbatch \
+    $run_dir/slurm/prep.sbatch \
 )
 
 
@@ -136,12 +156,13 @@ SCHISM_SHARED_ENV+="ALL"
 SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
 SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
+    --nodes $solver_nnodes --ntasks $solver_ntasks \
     --parsable \
     --output "${run_dir}/slurm/slurm-%j.spinup.out" \
     --job-name=spinup_$tag \
     -d afterok:$setup_id \
-    --export=$SCHISM_SHARED_ENV,SCHISM_DIR="$run_dir/setup/ensemble.dir/spinup",SCHISM_EXEC="$spinup_exec" \
-    $L_SCRIPT_DIR/schism.sbatch
+    --export=$SCHISM_SHARED_ENV,SCHISM_EXEC="$spinup_exec" \
+    $run_dir/slurm/schism.sbatch "$run_dir/setup/ensemble.dir/spinup"
 )
 
 joblist=""
@@ -150,13 +171,11 @@ for i in $run_dir/setup/ensemble.dir/runs/*; do
         sbatch --parsable -d afterok:$spinup_id \
         --output "${run_dir}/slurm/slurm-%j.run-$(basename $i).out" \
         --job-name="run_$(basename $i)_$tag" \
-        --export=$SCHISM_SHARED_ENV,SCHISM_DIR="$i",SCHISM_EXEC="$hotstart_exec" \
-        $L_SCRIPT_DIR/schism.sbatch
+        --export=$SCHISM_SHARED_ENV,SCHISM_EXEC="$hotstart_exec" \
+        $run_dir/slurm/schism.sbatch "$i"
         )
     joblist+=":$jobid"
 done
-#echo "Wait for ${joblist}"
-#srun -d afterok${joblist} --pty sleep 1
 
 # Post processing
 sbatch \
@@ -165,4 +184,4 @@ sbatch \
     --job-name=post_$tag \
     -d afterok${joblist} \
     --export=ALL,IMG="$L_IMG_DIR/prep.sif",ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
-    $L_SCRIPT_DIR/post.sbatch
+    $run_dir/slurm/post.sbatch
