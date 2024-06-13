@@ -154,14 +154,14 @@ echo "Launching runs"
 SCHISM_SHARED_ENV=""
 SCHISM_SHARED_ENV+="ALL"
 SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
-SCHISM_SHARED_ENV+=",MODULES=\"$L_SOLVE_MODULES\""
+SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
     --parsable \
     --output "${run_dir}/slurm/slurm-%j.spinup.out" \
     --job-name=spinup_$tag \
     -d afterok:$setup_id \
-    --export=$SCHISM_SHARED_ENV,SCHISM_EXEC="$spinup_exec" \
+    --export="$SCHISM_SHARED_ENV",SCHISM_EXEC="$spinup_exec" \
     $run_dir/slurm/schism.sbatch "$run_dir/setup/ensemble.dir/spinup"
 )
 
@@ -171,7 +171,7 @@ for i in $run_dir/setup/ensemble.dir/runs/*; do
         sbatch --parsable -d afterok:$spinup_id \
         --output "${run_dir}/slurm/slurm-%j.run-$(basename $i).out" \
         --job-name="run_$(basename $i)_$tag" \
-        --export=$SCHISM_SHARED_ENV,SCHISM_EXEC="$hotstart_exec" \
+        --export="$SCHISM_SHARED_ENV",SCHISM_EXEC="$hotstart_exec" \
         $run_dir/slurm/schism.sbatch "$i"
         )
     joblist+=":$jobid"

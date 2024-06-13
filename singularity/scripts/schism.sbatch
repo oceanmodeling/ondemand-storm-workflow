@@ -10,7 +10,7 @@ pushd $SCHISM_DIR
 mkdir -p outputs
 
 
-if [ ! -z $MODULES ]; then
+if [ ! -z "$MODULES" ]; then
     module purge
     module load $MODULES
     module list
