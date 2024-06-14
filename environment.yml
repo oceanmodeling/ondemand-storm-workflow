@@ -1,14 +1,47 @@
-name: odssm
+name: stormworkflow
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python=3.10
-  - prefect=1.4, <2
-  - cloudpickle
-  - ansible-core
-  - terraform
+  - cartopy
+  - cf-python
+  - cfdm
+  - cfgrib
+  - cfunits
+  - colored-traceback
+  - cmocean
+  - esmf
+  - esmpy
+  - fiona
+  - gdal
+  - geoalchemy2
+  - geopandas>=0.13
+  - geos
+  - hdf5
+  - matplotlib
+  - mpi4py
+  - netcdf4
+  - numpy
+  - numba
+  - ocsmesh==1.5.3
+  - pandas
+  - pip
+  - proj
+  - pyarrow
+  - pygeos
+  - pyproj
+  - python<3.11
+  - pytz
+  - shapely>=2
+  - rasterio
   - requests
-  - dnspython
-  - boto3
-  - dunamai
+  - rtree
+  - scipy
+  - seawater
+  - typing-extensions
+  - tqdm
+  - udunits2
+  - utm
+  - xarray==2023.7.0
+  - pip:
+    - --no-deps
+    - -rrequirements.txt
