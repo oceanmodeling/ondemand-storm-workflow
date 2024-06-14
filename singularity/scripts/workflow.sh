@@ -169,6 +169,7 @@ joblist=""
 for i in $run_dir/setup/ensemble.dir/runs/*; do
     jobid=$(
         sbatch --parsable -d afterok:$spinup_id \
+        --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
         --output "${run_dir}/slurm/slurm-%j.run-$(basename $i).out" \
         --job-name="run_$(basename $i)_$tag" \
         --export="$SCHISM_SHARED_ENV",SCHISM_EXEC="$hotstart_exec" \
