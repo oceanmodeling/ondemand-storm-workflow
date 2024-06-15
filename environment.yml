@@ -42,6 +42,3 @@ dependencies:
   - udunits2
   - utm
   - xarray==2023.7.0
-  - pip:
-    - --no-deps
-    - -rrequirements.txt

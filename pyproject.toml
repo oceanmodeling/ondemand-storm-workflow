@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_file = "stormworkflow/_version.py"
+
+[project]
+name = "storm-workflow"
+dynamic = ["version"]
+
+authors = [
+    {name = "Soroosh Mani", email = "soroosh.mani@noaa.gov"},
+    {name = "William Pringle", email = "wpringle@anl.gov"},
+    {name = "Fariborz Daneshvar", email = "fariborz.daneshvar@noaa.gov"},
+]
+maintainers = [
+    {name = "Soroosh Mani", email = "soroosh.mani@noaa.gov"}
+]
+
+readme = {file = "README.txt", content-type = "text/markdown"}
+
+description = "A set of scripts to generate probabilistic storm surge results!"
+
+license = {file = "LICENSE"}
+
+requires-python = ">= 3.8, < 3.11"
+
+[tool.setuptools.packages.find]
+where = ["stormworkflow"]
+
+[tool.setuptools.package-data]
+slurm = ["*.sbatch"]
+scripts = ["*.sh", "*.conf", "*.exp"]
+refs = ["*.nml"]
+
+dependencies = [
+    "cartopy",
+    "cf-python",
+    "cfdm",
+    "cfgrib",
+    "cfunits",
+    "chaospy>=4.2.7",
+    "coupledmodeldriver>=1.6.6",
+    "colored-traceback",
+    "cmocean",
+    "ensembleperturbation>=1.1.2",
+    "fiona",
+    "geoalchemy2",
+#    "geopandas>=0.13",
+    "geopandas",
+    "matplotlib",
+    "mpi4py",
+    "netCDF4",
+    "numpy",
+    "numba",
+    "ocsmesh==1.5.3",
+    "pandas",
+    "pyarrow",
+    "pygeos",
+    "pyproj",
+    "pyschism>=0.1.15",
+    "pytz",
+    "shapely>=2",
+    "stormevents==2.2.3",
+    "rasterio",
+    "requests",
+    "rtree",
+    "scipy",
+    "seawater",
+    "typing-extensions",
+    "tqdm",
+    "utm",
+    "xarray==2023.7.0",
+]
+
+[project.urls]
+#Homepage = "https://example.com"
+#Documentation = "https://readthedocs.org"
+Repository = "https://github.com/oceanmodeling/ondemand-storm-workflow.git"
+
+#[project.scripts]
+#run_ensemble = "stormworkflow:main_cli"
