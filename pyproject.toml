@@ -70,12 +70,13 @@ version_file = "stormworkflow/_version.py"
 include-package-data = true
 
 [tool.setuptools.packages.find]
+namespaces = true
 where = ["."]
 
 [tool.setuptools.package-data]
-slurm = ["*.sbatch"]
-scripts = ["*.sh", "*.conf", "*.exp"]
-refs = ["*.nml"]
+"stormworkflow.slurm" = ["*.sbatch"]
+"stormworkflow.scripts" = ["*.sh", "*.conf", "*.exp"]
+"stormworkflow.refs" = ["*.nml"]
 
 [project.urls]
 #Homepage = "https://example.com"
