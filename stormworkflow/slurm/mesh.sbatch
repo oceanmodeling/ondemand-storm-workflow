@@ -6,4 +6,4 @@
 
 set -ex
 
-singularity run ${SINGULARITY_BINDFLAGS} ${IMG} ${STORM} ${YEAR} ${MESH_KWDS} 
+hurricane_mesh ${STORM} ${YEAR} ${MESH_KWDS} 

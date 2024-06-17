@@ -526,8 +526,7 @@ class HurricaneMesher:
             overwrite=True)
 
 
-
-if __name__ == '__main__':
+def cli():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -546,3 +545,8 @@ if __name__ == '__main__':
     logger.info(f"Mesh arguments are {args}.")
 
     main(args, [hurrmesh_client, subset_client])
+
+
+if __name__ == '__main__':
+    cli()
+

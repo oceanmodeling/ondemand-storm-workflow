@@ -346,9 +346,7 @@ def main(args):
         coops_ssh[['x', 'y']].to_dataframe().drop(columns=['nws_id']).to_csv(
                 sta_loc_out, header=False, index=False)
 
-        
-if __name__ == '__main__':
-
+def cli():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -419,3 +417,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     main(args)
+        
+if __name__ == '__main__':
+    cli()
+

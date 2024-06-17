@@ -83,5 +83,8 @@ where = ["."]
 #Documentation = "https://readthedocs.org"
 Repository = "https://github.com/oceanmodeling/ondemand-storm-workflow.git"
 
-#[project.scripts]
-#run_ensemble = "stormworkflow:main_cli"
+[project.scripts]
+run_ensemble = "stormworkflow.main:main"
+hurricane_data = "stormworkflow.prep.hurricane_data:cli"
+hurricane_mesh = "stormworkflow.prep.hurricane_mesh:cli"
+download_data = "stormworkflow.prep.download_data:main"

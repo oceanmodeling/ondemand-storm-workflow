@@ -19,8 +19,7 @@ mkdir -p $TMPDIR
 
 function version {
     logfile=$1
-    echo -n "`basename $2`: " >> $logfile
-    singularity run $2 pip list | grep $3 >> $logfile
+    pip list | grep $2 >> $logfile
 }
 
 function add_sbatch_header {
@@ -50,10 +49,10 @@ function init {
     done
 
     logfile=$run_dir/versions.info
-    version $logfile $L_IMG_DIR/info.sif stormevents
-    version $logfile $L_IMG_DIR/prep.sif stormevents
-    version $logfile $L_IMG_DIR/prep.sif ensembleperturbation
-#    version $logfile $L_IMG_DIR/ocsmesh.sif ocsmesh
+    version $logfile stormevents
+    version $logfile stormevents
+    version $logfile ensembleperturbation
+    version $logfile ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
 
     echo $run_dir
@@ -61,13 +60,11 @@ function init {
 
 uuid=$(uuidgen)
 tag=${storm}_${year}_${uuid}
-suffix=$3
 if [ ! -z $suffix ]; then tag=${tag}_${suffix}; fi
 run_dir=$(init $tag)
 echo $run_dir
 
-singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/info.sif \
-    hurricane_data \
+hurricane_data \
     --date-range-outpath $run_dir/setup/dates.csv \
     --track-outpath $run_dir/nhc_track/hurricane-track.dat \
     --swath-outpath $run_dir/windswath \
@@ -107,7 +104,7 @@ sbatch \
     --output "${run_dir}/slurm/slurm-%j.mesh.out" \
     --wait \
     --job-name=mesh_$tag \
-    --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year,IMG=$L_IMG_DIR/ocsmesh.sif \
+    --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year \
     $run_dir/slurm/mesh.sbatch
 
 
@@ -115,7 +112,7 @@ echo "Download necessary data..."
 # TODO: Separate pairing NWM-elem from downloading!
 DOWNLOAD_KWDS=""
 if [ $hydrology == 1 ]; then DOWNLOAD_KWDS+=" --with-hydrology"; fi
-singularity run $SINGULARITY_BINDFLAGS $L_IMG_DIR/prep.sif download_data \
+download_data \
     --output-directory $run_dir/setup/ensemble.dir/ \
     --mesh-directory $run_dir/mesh/ \
     --date-range-file $run_dir/setup/dates.csv \
