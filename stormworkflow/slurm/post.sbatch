@@ -5,12 +5,10 @@
 
 set -ex
 
-singularity run ${SINGULARITY_BINDFLAGS} ${IMG} \
-    combine_ensemble \
+combine_ensemble \
     --ensemble-dir $ENSEMBLE_DIR \
     --tracks-dir $ENSEMBLE_DIR/track_files
 
-singularity run ${SINGULARITY_BINDFLAGS} ${IMG} \
-    analyze_ensemble \
+analyze_ensemble \
     --ensemble-dir $ENSEMBLE_DIR \
     --tracks-dir $ENSEMBLE_DIR/track_files

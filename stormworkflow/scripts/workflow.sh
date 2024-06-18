@@ -121,7 +121,6 @@ download_data \
 
 
 echo "Setting up the model..."
-PREP_KWDS="setup_ensemble"
 PREP_KWDS+=" --track-file $run_dir/nhc_track/hurricane-track.dat"
 PREP_KWDS+=" --output-directory $run_dir/setup/ensemble.dir/"
 PREP_KWDS+=" --num-perturbations $num_perturb"

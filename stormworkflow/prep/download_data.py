@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def main():
-    
-    args = parse_arguments()
+def main(args):
 
     out_dir = args.output_directory
     dt_rng_path = args.date_range_file
@@ -86,6 +84,9 @@ def parse_arguments():
 
     return args
 
+    
+def cli():
+    main(parse_arguments())
 
 if __name__ == '__main__':
-    main()
+    cli()

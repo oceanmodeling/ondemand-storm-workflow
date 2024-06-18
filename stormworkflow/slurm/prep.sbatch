@@ -6,4 +6,4 @@
 
 set -ex
 
-singularity run ${SINGULARITY_BINDFLAGS} ${IMG} ${PREP_KWDS} ${STORM} ${YEAR} 
+setup_ensemble ${PREP_KWDS} ${STORM} ${YEAR} 

@@ -37,11 +37,13 @@ from shapely import get_coordinates
 from stormevents import StormEvent
 from stormevents.nhc.track import VortexTrack
 
-import wwm
-from relocate_source_feeder import (
-    relocate_sources,
-    v16_mandatory_sources_coor,
-)
+import stormworkflow.prep.wwm
+# TODO: Later find a clean way to package this module from SCHISM from
+# src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/Relocate/
+#from relocate_source_feeder import (
+#    relocate_sources,
+#    v16_mandatory_sources_coor,
+#)
 
 
 REFS = Path('/refs')
@@ -335,5 +337,8 @@ def parse_arguments():
     return args
 
 
-if __name__ == '__main__':
+def cli():
     main(parse_arguments())
+
+if __name__ == '__main__':
+    cli()

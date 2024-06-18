@@ -33,15 +33,14 @@ def main():
         run_args,
         env=run_env,
         shell=False,
-        check=True,
+#        check=True,
         capture_output=False,
     )
 
-#    if ps.returncode != 0:
-#        _logger.error(ps.stderr)
-#    
-#    _logger.info(ps.stdout)
-
+    if ps.returncode != 0:
+        _logger.error(ps.stderr)
+    
+    _logger.info(ps.stdout)
 
 
 if __name__ == '__main__':
