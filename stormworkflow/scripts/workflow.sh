@@ -73,6 +73,7 @@ hurricane_data \
     --hours-before-landfall "$hr_prelandfall" \
     --lead-times "$L_LEADTIMES_DATASET" \
     --preprocessed-tracks-dir "$L_TRACK_DIR" \
+    --countries-polygon "$L_SHP_DIR/ne_110m_cultural/ne_110m_admin_0_countries.shp" \
     $storm $year
 
 

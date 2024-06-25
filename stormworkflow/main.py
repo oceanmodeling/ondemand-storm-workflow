@@ -4,6 +4,7 @@ import os
 import shlex
 from importlib.resources import files
 from argparse import ArgumentParser
+from pathlib import Path
 
 import stormworkflow
 import yaml
@@ -18,7 +19,7 @@ _logger = logging.getLogger(__file__)
 def main():
 
     parser = ArgumentParser()
-    parser.add_argument('--configuration', '-c', type=str, required=False)
+    parser.add_argument('configuration', type=Path)
     args = parser.parse_args()
 
     scripts = files('stormworkflow.scripts')
