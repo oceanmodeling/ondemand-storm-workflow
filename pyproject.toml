@@ -50,6 +50,7 @@ dependencies = [
     "pyproj",
     "pyschism>=0.1.15",
     "pytz",
+    "pyyaml",
     "shapely>=2",
     "stormevents==2.2.3",
     "rasterio",
@@ -75,8 +76,8 @@ where = ["."]
 
 [tool.setuptools.package-data]
 "stormworkflow.slurm" = ["*.sbatch"]
-"stormworkflow.scripts" = ["*.sh", "*.conf", "*.exp"]
-"stormworkflow.refs" = ["*.nml"]
+"stormworkflow.scripts" = ["*.sh", "*.exp"]
+"stormworkflow.refs" = ["*.nml", "*.yaml"]
 
 [project.urls]
 #Homepage = "https://example.com"

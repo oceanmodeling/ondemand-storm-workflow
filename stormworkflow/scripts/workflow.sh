@@ -1,11 +1,8 @@
 #!/bin/bash
 set -e
 
-# User inputs...
-THIS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source $THIS_SCRIPT_DIR/input.conf
-
-if [ $use_wwm == 1 ]; then hotstart_exec='pschism_WWM_PAHM_TVD-VL'; fi
+export PATH=$PATH:$PATH_APPEND
+export TMPDIR
 
 # Processing...
 mkdir -p $TMPDIR
@@ -16,6 +13,7 @@ mkdir -p $TMPDIR
 # CHECK BIN
 # combine_hotstart7
 # pschism ...
+input_file=$1
 
 function version {
     logfile=$1
@@ -50,10 +48,11 @@ function init {
 
     logfile=$run_dir/versions.info
     version $logfile stormevents
-    version $logfile stormevents
     version $logfile ensembleperturbation
     version $logfile ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
+
+    cp $input_file $run_dir/input.yaml
 
     echo $run_dir
 }
