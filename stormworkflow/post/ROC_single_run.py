@@ -273,7 +273,7 @@ def main(args):
         plt.close()
 
 
-def entry():
+def cli():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--storm_name', help='name of the storm', type=str)
@@ -297,4 +297,4 @@ def entry():
 if __name__ == '__main__':
     warnings.filterwarnings('ignore')
     # warnings.filterwarnings("ignore", category=DeprecationWarning)
-    entry()
+    cli()
