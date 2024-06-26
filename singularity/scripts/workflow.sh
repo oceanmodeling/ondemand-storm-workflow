@@ -107,7 +107,12 @@ setup_id=$(sbatch \
 echo "Launching runs"
 SCHISM_SHARED_ENV=""
 SCHISM_SHARED_ENV+="ALL"
-SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
+if [ $INTEL_SOLVER == 1 ]; then
+    SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve_intel.sif"
+else
+    SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
+    SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
+fi
 SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --parsable \

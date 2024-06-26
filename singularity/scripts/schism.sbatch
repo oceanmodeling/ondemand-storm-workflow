@@ -5,7 +5,7 @@
 #SBATCH --nodes=3
 #SBATCH --ntasks-per-node=36
 
-module load $MODULES
+if [ $INTEL_SOLVER == 0 ]; then module load $MODULES; fi
 
 export MV2_ENABLE_AFFINITY=0
 ulimit -s unlimited
@@ -14,8 +14,16 @@ set -ex
 
 pushd ${SCHISM_DIR}
 mkdir -p outputs
-mpirun -np 36 singularity exec ${SINGULARITY_BINDFLAGS} ${IMG} \
-    ${SCHISM_EXEC} 4
+
+if [ $INTEL_SOLVER == 1 ]; then
+    export SINGULARITYENV_FI_PROVIDER=tcp
+    export SINGULARITY_SHELL=/bin/bash
+    srun --mpi=pmi2 singularity exec ${SINGULARITY_BINDFLAGS} ${IMG} \
+        ${SCHISM_EXEC} 4
+else
+    mpirun -np 36 singularity exec ${SINGULARITY_BINDFLAGS} ${IMG} \
+        ${SCHISM_EXEC} 4
+fi
 
 if [ $? -eq 0 ]; then
     echo "Combining outputs..."
