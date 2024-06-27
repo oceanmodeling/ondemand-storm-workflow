@@ -14,7 +14,7 @@ export PATH=$L_SCRIPT_DIR:$PATH
 mkdir -p $TMPDIR
 
 function init {
-    local run_dir=/nhc/nhc_hurricanes/$1
+    local run_dir=/lustre/hurricanes/$1
     mkdir $run_dir
 #    mkdir $run_dir/downloads
     mkdir $run_dir/mesh
