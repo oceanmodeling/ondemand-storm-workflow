@@ -15,7 +15,7 @@ def main(args):
     output = combine_results(
         model='schism',
         adcirc_like=True,
-        filenames=['out2d_1.nc'],
+        filenames=['out2d_*.nc'],
         output=ensemble_dir / 'analyze',
         directory=ensemble_dir,
         parallel=not args.sequential,
