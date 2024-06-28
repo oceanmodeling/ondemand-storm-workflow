@@ -6,12 +6,14 @@
 
 set -ex
 
-singularity run ${SINGULARITY_BINDFLAGS} ${IMG} \
-    combine_ensemble \
+#singularity run ${SINGULARITY_BINDFLAGS} ${IMG} \
+#    combine_ensemble \
+python ./../prep/files/combine_ensemble.py \
     --ensemble-dir $ENSEMBLE_DIR \
     --tracks-dir $ENSEMBLE_DIR/track_files
 
-singularity run ${SINGULARITY_BINDFLAGS} ${IMG} \
-    analyze_ensemble \
+#singularity run ${SINGULARITY_BINDFLAGS} ${IMG} \
+#    analyze_ensemble \
+python ./../prep/files/analyze_ensemble.py \
     --ensemble-dir $ENSEMBLE_DIR \
     --tracks-dir $ENSEMBLE_DIR/track_files
