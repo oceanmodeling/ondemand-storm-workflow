@@ -17,6 +17,7 @@ dependencies:
   - geopandas>=0.13
   - geos
   - hdf5
+  - importlib_metadata<8  # Fix issue with esmpy Author import
   - matplotlib
   - mpi4py
   - netcdf4
