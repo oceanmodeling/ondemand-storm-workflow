@@ -1,3 +1,0 @@
-#!/bin/bash
-
-echo ECS_CLUSTER=odssm-schism >> /etc/ecs/ecs.config
