@@ -52,7 +52,7 @@ dependencies = [
     "pytz",
     "pyyaml",
     "shapely>=2",
-    "stormevents==2.2.3",
+    "stormevents==2.2.4",
     "rasterio",
     "requests",
     "rtree",
