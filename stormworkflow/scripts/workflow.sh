@@ -30,6 +30,7 @@ function init {
     local run_dir=$RUN_OUT/$1
     mkdir $run_dir
     mkdir $run_dir/slurm
+    mkdir $run_dir/output
     mkdir $run_dir/mesh
     mkdir $run_dir/setup
     mkdir $run_dir/nhc_track
@@ -74,7 +75,7 @@ hurricane_data \
     --lead-times "$L_LEADTIMES_DATASET" \
     --preprocessed-tracks-dir "$L_TRACK_DIR" \
     --countries-polygon "$L_SHP_DIR/ne_110m_cultural/ne_110m_admin_0_countries.shp" \
-    $storm $year
+    $storm $year 2>&1 | tee "${run_dir}/output/head_hurricane_data.out"
 
 
 MESH_KWDS=""
@@ -101,7 +102,7 @@ fi
 MESH_KWDS+=" --out ${run_dir}/mesh"
 export MESH_KWDS
 sbatch \
-    --output "${run_dir}/slurm/slurm-%j.mesh.out" \
+    --output "${run_dir}/output/slurm-%j.mesh.out" \
     --wait \
     --job-name=mesh_$tag \
     --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year \
@@ -117,7 +118,7 @@ download_data \
     --mesh-directory $run_dir/mesh/ \
     --date-range-file $run_dir/setup/dates.csv \
     --nwm-file $L_NWM_DATASET \
-    $DOWNLOAD_KWDS
+    $DOWNLOAD_KWDS 2>&1 | tee "${run_dir}/output/head_download_nwm.out"
 
 
 echo "Setting up the model..."
@@ -137,7 +138,7 @@ PREP_KWDS+=" --pahm-model $pahm_model"
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \
-    --output "${run_dir}/slurm/slurm-%j.setup.out" \
+    --output "${run_dir}/output/slurm-%j.setup.out" \
     --wait \
     --job-name=prep_$tag \
     --parsable \
@@ -154,7 +155,7 @@ SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
     --parsable \
-    --output "${run_dir}/slurm/slurm-%j.spinup.out" \
+    --output "${run_dir}/output/slurm-%j.spinup.out" \
     --job-name=spinup_$tag \
     -d afterok:$setup_id \
     --export="$SCHISM_SHARED_ENV",SCHISM_EXEC="$spinup_exec" \
@@ -166,7 +167,7 @@ for i in $run_dir/setup/ensemble.dir/runs/*; do
     jobid=$(
         sbatch --parsable -d afterok:$spinup_id \
         --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
-        --output "${run_dir}/slurm/slurm-%j.run-$(basename $i).out" \
+        --output "${run_dir}/output/slurm-%j.run-$(basename $i).out" \
         --job-name="run_$(basename $i)_$tag" \
         --export="$SCHISM_SHARED_ENV",SCHISM_EXEC="$hotstart_exec" \
         $run_dir/slurm/schism.sbatch "$i"
@@ -177,7 +178,7 @@ done
 # Post processing
 sbatch \
     --parsable \
-    --output "${run_dir}/slurm/slurm-%j.post.out" \
+    --output "${run_dir}/output/slurm-%j.post.out" \
     --job-name=post_$tag \
     -d afterok${joblist} \
     --export=ALL,IMG="$L_IMG_DIR/prep.sif",ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
