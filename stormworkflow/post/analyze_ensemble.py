@@ -51,7 +51,7 @@ def main(args):
 
 def analyze(tracks_dir, analyze_dir):
 
-    mann_coefs = [0.025, 0.05, 0.1]
+    mann_coefs = [0.025]  #[0.025, 0.05, 0.1]
     for mann_coef in mann_coefs:
         _analyze(tracks_dir, analyze_dir, mann_coef)
 
