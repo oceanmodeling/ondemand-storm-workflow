@@ -36,8 +36,8 @@ dependencies = [
     "ensembleperturbation>=1.1.2",
     "fiona",
     "geoalchemy2",
-#    "geopandas>=0.13",
-    "geopandas",
+    "geopandas==0.14",  # to address AttributeError. Should be fixed later in EnsemblePerturbation
+#    "geopandas",
     "matplotlib",
     "mpi4py",
     "netCDF4",
