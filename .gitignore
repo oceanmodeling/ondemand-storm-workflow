@@ -1,7 +1,3 @@
-.terraform*
-terraform.tfstate*
-*.tfvars*
-vars_from_terraform
 __pycache__/
-ansible_collections/
-*.sif
+*.egg-info/
+_version.py
