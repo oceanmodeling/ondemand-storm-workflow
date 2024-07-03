@@ -8,7 +8,10 @@ TO BE COMPLETED...
 
 
 ## References
-- Daneshvar, F., et al. Tech Report (TODO)
+- Daneshvar, F., Mani, S., Pringle, W. J., Moghimi, S., Myers, E. 
+_Probabilistic Prediction of Tropical Cyclone (TC) Driven Flood Depth_ 
+_and Extent with a User-Friendly Python Module_ 
+(NOAA Technical Memorandum NOS CS, under review) 
 - Pringle, W. J., Mani, S., Sargsyan, K., Moghimi, S., Zhang, Y. J.,
 Khazaei, B., Myers, E. (January 2023).
 _Surrogate-Assisted Bayesian Uncertainty Quantification for
