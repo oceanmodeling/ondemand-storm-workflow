@@ -38,6 +38,9 @@ from ensembleperturbation.uncertainty_quantification.surrogate import (
 )
 from ensembleperturbation.utilities import get_logger
 
+from dask_jobqueue import SLURMCluster
+from dask.distributed import Client
+
 LOGGER = get_logger('klpc_wetonly')
 
 
@@ -409,4 +412,15 @@ def cli():
 
 
 if __name__ == '__main__':
+    cluster = SLURMCluster(cores=16,
+                           processes=1,
+                           memory="500GB",
+                           account="compute",
+                           walltime="08:00:00",
+                           header_skip=['--mem'],
+                           interface="eth0") 
+    cluster.scale(6) 
+    client = Client(cluster) 
+    print(client)
+
     cli()
