@@ -1,6 +1,0 @@
----
-
-prefect_agent_ec2_key: odss-ec2-prefect-agent
-prefect_agent_image_type: ami-03fe4d5b1d229063a
-prefect_agent_region: us-west-2
-prefect_agent_vpc_subnet_id: subnet-98f04dc5

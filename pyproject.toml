@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stormworkflow"
+dynamic = ["version"]
+
+authors = [
+    {name = "Soroosh Mani", email = "soroosh.mani@noaa.gov"},
+    {name = "William Pringle", email = "wpringle@anl.gov"},
+    {name = "Fariborz Daneshvar", email = "fariborz.daneshvar@noaa.gov"},
+]
+maintainers = [
+    {name = "Soroosh Mani", email = "soroosh.mani@noaa.gov"}
+]
+
+readme = {file = "README.txt", content-type = "text/markdown"}
+
+description = "A set of scripts to generate probabilistic storm surge results!"
+
+license = {file = "LICENSE"}
+
+requires-python = ">= 3.8, < 3.11"
+
+dependencies = [
+    "cartopy",
+    "cf-python",
+    "cfdm",
+    "cfgrib",
+    "cfunits",
+    "chaospy>=4.2.7",
+    "coupledmodeldriver>=1.6.6",
+    "colored-traceback",
+    "cmocean",
+    "dask",
+    "dask-jobqueue",
+    "ensembleperturbation>=1.1.2",
+    "fiona",
+    "geoalchemy2",
+    "geopandas==0.14",  # to address AttributeError. Should be fixed later in EnsemblePerturbation
+#    "geopandas",
+    "matplotlib",
+    "mpi4py",
+    "netCDF4",
+    "numpy",
+    "numba",
+    "ocsmesh==1.5.3",
+    "pandas",
+    "pyarrow",
+    "pygeos",
+    "pyproj",
+    "pyschism>=0.1.15",
+    "pytz",
+    "pyyaml",
+    "shapely>=2",
+    "stormevents==2.2.4",
+    "rasterio",
+    "requests",
+    "rtree",
+    "scipy",
+    "seawater",
+    "typing-extensions",
+    "tqdm",
+    "utm",
+    "xarray==2023.7.0",
+]
+
+[tool.setuptools_scm]
+version_file = "stormworkflow/_version.py"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+namespaces = true
+where = ["."]
+
+[tool.setuptools.package-data]
+"stormworkflow.slurm" = ["*.sbatch"]
+"stormworkflow.scripts" = ["*.sh", "*.exp"]
+"stormworkflow.refs" = ["*.nml", "*.yaml"]
+
+[project.urls]
+#Homepage = "https://example.com"
+#Documentation = "https://readthedocs.org"
+Repository = "https://github.com/oceanmodeling/ondemand-storm-workflow.git"
+
+[project.scripts]
+run_ensemble = "stormworkflow.main:main"
+hurricane_data = "stormworkflow.prep.hurricane_data:cli"
+hurricane_mesh = "stormworkflow.prep.hurricane_mesh:cli"
+download_data = "stormworkflow.prep.download_data:cli"
+setup_ensemble = "stormworkflow.prep.setup_ensemble:cli"
+combine_ensemble = "stormworkflow.post.combine_ensemble:cli"
+analyze_ensemble = "stormworkflow.post.analyze_ensemble:cli"
+storm_roc_curve = "stormworkflow.post.ROC_single_run:cli"
