@@ -33,6 +33,8 @@ dependencies = [
     "coupledmodeldriver>=1.6.6",
     "colored-traceback",
     "cmocean",
+    "dask",
+    "dask-jobqueue",
     "ensembleperturbation>=1.1.2",
     "fiona",
     "geoalchemy2",

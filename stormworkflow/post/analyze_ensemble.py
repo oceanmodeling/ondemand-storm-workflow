@@ -38,6 +38,9 @@ from ensembleperturbation.uncertainty_quantification.surrogate import (
 )
 from ensembleperturbation.utilities import get_logger
 
+from dask_jobqueue import SLURMCluster
+from dask.distributed import Client
+
 LOGGER = get_logger('klpc_wetonly')
 
 
@@ -51,7 +54,7 @@ def main(args):
 
 def analyze(tracks_dir, analyze_dir):
 
-    mann_coefs = [0.025, 0.05, 0.1]
+    mann_coefs = [0.025]  #[0.025, 0.05, 0.1]
     for mann_coef in mann_coefs:
         _analyze(tracks_dir, analyze_dir, mann_coef)
 
@@ -409,4 +412,15 @@ def cli():
 
 
 if __name__ == '__main__':
+    cluster = SLURMCluster(cores=16,
+                           processes=1,
+                           memory="500GB",
+                           account="compute",
+                           walltime="08:00:00",
+                           header_skip=['--mem'],
+                           interface="eth0") 
+    cluster.scale(6) 
+    client = Client(cluster) 
+    print(client)
+
     cli()
