@@ -415,10 +415,10 @@ if __name__ == '__main__':
     cluster = SLURMCluster(cores=16,
                            processes=1,
                            memory="500GB",
-                           account="compute",
+                           account="nos-surge", #PW:"compute" ; Hercules:"nos-surge" or "nos-ofs" 
                            walltime="08:00:00",
                            header_skip=['--mem'],
-                           interface="eth0") 
+                      #     interface="eth0")      # only for PW
     cluster.scale(6) 
     client = Client(cluster) 
     print(client)
