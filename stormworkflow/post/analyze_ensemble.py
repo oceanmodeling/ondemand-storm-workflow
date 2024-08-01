@@ -417,7 +417,7 @@ if __name__ == '__main__':
                            memory="500GB",
                            account="nos-surge", #PW:"compute" ; Hercules:"nos-surge" or "nos-ofs" 
                            walltime="08:00:00",
-                           header_skip=['--mem'],
+                           header_skip=['--mem'])#,
                       #     interface="eth0")      # only for PW
     cluster.scale(6) 
     client = Client(cluster) 
