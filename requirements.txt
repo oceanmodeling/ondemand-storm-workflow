@@ -1,5 +1,0 @@
-chaospy>=4.2.7
-stormevents==2.2.3
-pyschism>=0.1.15
-coupledmodeldriver>=1.6.6
-ensembleperturbation>=1.1.2

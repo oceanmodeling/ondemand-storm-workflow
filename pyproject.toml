@@ -21,7 +21,7 @@ description = "A set of scripts to generate probabilistic storm surge results!"
 
 license = {file = "LICENSE"}
 
-requires-python = ">= 3.8, < 3.11"
+requires-python = ">= 3.8, < 3.12"
 
 dependencies = [
     "cartopy",
@@ -38,8 +38,7 @@ dependencies = [
     "ensembleperturbation>=1.1.2",
     "fiona",
     "geoalchemy2",
-    "geopandas==0.14",  # to address AttributeError. Should be fixed later in EnsemblePerturbation
-#    "geopandas",
+    "geopandas>=0.14",
     "matplotlib",
     "mpi4py",
     "netCDF4",
@@ -54,7 +53,7 @@ dependencies = [
     "pytz",
     "pyyaml",
     "shapely>=2",
-    "stormevents==2.2.4",
+    "stormevents>=2.2.4",
     "rasterio",
     "requests",
     "rtree",
@@ -63,7 +62,7 @@ dependencies = [
     "typing-extensions",
     "tqdm",
     "utm",
-    "xarray==2023.7.0",
+    "xarray",
 ]
 
 [tool.setuptools_scm]

@@ -14,7 +14,7 @@ dependencies:
   - fiona
   - gdal
   - geoalchemy2
-  - geopandas>=0.13
+  - geopandas
   - geos
   - hdf5
   - importlib_metadata<8  # Fix issue with esmpy Author import
@@ -30,7 +30,7 @@ dependencies:
   - pyarrow
   - pygeos
   - pyproj
-  - python<3.11
+  - python<3.12
   - pytz
   - shapely>=2
   - rasterio
@@ -42,4 +42,4 @@ dependencies:
   - tqdm
   - udunits2
   - utm
-  - xarray==2023.7.0
+  - xarray

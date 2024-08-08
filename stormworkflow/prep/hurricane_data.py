@@ -37,7 +37,7 @@ logging.basicConfig(
     format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S')
 
-
+NE_LOW_ADMIN = 'https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip'
 
 def trackstart_from_file(
     leadtime_file: Optional[pathlib.Path],
@@ -143,12 +143,11 @@ def main(args):
     hr_before_landfall = args.hours_before_landfall
     lead_times = args.lead_times
     track_dir = args.preprocessed_tracks_dir
-    countries_shpfile = args.countries_polygon
 
     if hr_before_landfall < 0:
         hr_before_landfall = 48
 
-    ne_low = gpd.read_file(countries_shpfile)
+    ne_low = gpd.read_file(NE_LOW_ADMIN)
     shp_US = ne_low[ne_low.NAME_EN.isin(['United States of America', 'Puerto Rico'])].unary_union
 
     logger.info("Fetching hurricane info...")
@@ -413,12 +412,6 @@ def cli():
         "--preprocessed-tracks-dir",
         type=pathlib.Path,
         help="Existing adjusted track directory",
-    )
-
-    parser.add_argument(
-        "--countries-polygon",
-        type=pathlib.Path,
-        help="Shapefile containing country polygons",
     )
 
     args = parser.parse_args()
