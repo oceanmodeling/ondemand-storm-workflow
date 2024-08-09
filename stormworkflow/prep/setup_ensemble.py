@@ -189,12 +189,7 @@ def main(args):
         perturbations=args.num_perturbations,
         directory=workdir / 'track_files',
         storm=workdir / 'track_to_perturb.dat',
-        variables=[
-            'cross_track',
-            'along_track',
-            'radius_of_maximum_winds', # TODO: add option for persistent
-            'max_sustained_wind_speed',
-        ],
+        variables=args.variables,
         sample_from_distribution=args.sample_from_distribution,
         sample_rule=args.sample_rule,
         quadrature=args.quadrature,
@@ -339,6 +334,7 @@ def parse_arguments():
     argument_parser.add_argument('--use-wwm', action='store_true')
     argument_parser.add_argument('--with-hydrology', action='store_true')
     argument_parser.add_argument('--pahm-model', choices=['gahm', 'symmetric'], default='gahm')
+    argument_parser.add_argument('--variables', nargs='+', type=str)
 
     argument_parser.add_argument('name', help='name of the storm', type=str)
 
