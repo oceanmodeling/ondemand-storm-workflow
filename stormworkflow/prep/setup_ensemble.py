@@ -107,6 +107,17 @@ def _fix_nwm_issues(ensemble_dir, hires_shapefile):
             _relocate_source_sink(pth, hires_shapefile)
 
 
+def _fix_hotstart_issue(ensemble_dir):
+    hotstart_dirs = ensemble_dir.glob('runs/*')
+    for pth in hotstart_dirs:
+        nm_list = f90nml.read(pth / 'param.nml')
+        nm_list['opt']['dramp'] = 0.0
+        nm_list['opt']['drampbc'] = 0.0
+        nm_list['opt']['dramp_ss'] = 0.0
+        nm_list['opt']['drampwind'] = 0.0
+        nm_list.write(pth / 'param.nml', force=True)
+
+
 def main(args):
 
     track_path = args.track_file
@@ -267,6 +278,7 @@ def main(args):
         }
     )
 
+    _fix_hotstart_issue(workdir)
     if with_hydrology:
         _fix_nwm_issues(workdir, hires_reg)
     if use_wwm:
