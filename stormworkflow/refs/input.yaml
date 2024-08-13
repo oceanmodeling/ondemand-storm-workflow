@@ -1,5 +1,5 @@
 ---
-input_version: 0.0.1
+input_version: 0.0.2
 
 storm: "florence"
 year: 2018
@@ -14,6 +14,12 @@ num_perturb: 2
 sample_rule: "korobov"
 spinup_exec: "pschism_PAHM_TVD-VL"
 hotstart_exec: "pschism_PAHM_TVD-VL"
+perturb_vars:
+  - 'cross_track'
+  - 'along_track'
+#  - 'radius_of_maximum_winds'
+  - 'radius_of_maximum_winds_persistent'
+  - 'max_sustained_wind_speed'
 
 hpc_solver_nnodes: 3
 hpc_solver_ntasks: 108
