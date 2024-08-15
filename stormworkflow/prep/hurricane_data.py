@@ -17,6 +17,7 @@ from typing import Optional, List
 
 import pandas as pd
 import geopandas as gpd
+import geodatasets
 from searvey.coops import COOPS_TidalDatum
 from searvey.coops import COOPS_TimeZone
 from searvey.coops import COOPS_Units
@@ -146,6 +147,9 @@ def main(args):
 
     if hr_before_landfall < 0:
         hr_before_landfall = 48
+
+    # Caching for next steps!
+    geodatasets.get_path('naturalearth land')
 
     ne_low = gpd.read_file(NE_LOW_ADMIN)
     shp_US = ne_low[ne_low.NAME_EN.isin(['United States of America', 'Puerto Rico'])].unary_union
