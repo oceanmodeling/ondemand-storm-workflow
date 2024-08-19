@@ -2,6 +2,7 @@ import subprocess
 import logging
 import os
 import shlex
+import warnings
 from importlib.resources import files
 from argparse import ArgumentParser
 from pathlib import Path
@@ -40,13 +41,15 @@ def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
     return Version('0.0.2')
 
 
-def _handle_input_version(inout_conf):
+def handle_input_version(inout_conf):
 
     if 'input_version' not in inout_conf:
         ver = CUR_INPUT_VER
-        _logger.warning(
+        warnings.warn(
             f"`input_version` is NOT specified in `input.yaml`; assuming {ver}"
         )
+        inout_conf['input_version'] = ver
+        return
 
     ver = Version(inout_conf['input_version'])
 
@@ -77,7 +80,7 @@ def main():
 
     infile = args.configuration
     if infile is None:
-        _logger.warning(
+        warnings.warn(
             'No input configuration provided, using reference file!'
         )
         infile = refs.joinpath('input.yaml')
@@ -85,7 +88,7 @@ def main():
     with open(infile, 'r') as yfile:
         conf = yaml.load(yfile, Loader=Loader)
 
-    _handle_input_version(conf)
+    handle_input_version(conf)
     # TODO: Write out the updated config as a yaml file
 
     wf = scripts.joinpath('workflow.sh')
