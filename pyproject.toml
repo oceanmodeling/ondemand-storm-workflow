@@ -45,6 +45,7 @@ dependencies = [
     "numpy",
     "numba",
     "ocsmesh==1.5.3",
+    "packaging",
     "pandas",
     "pyarrow",
     "pygeos",

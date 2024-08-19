@@ -6,15 +6,61 @@ from importlib.resources import files
 from argparse import ArgumentParser
 from pathlib import Path
 
-import stormworkflow
 import yaml
+from packaging.version import Version
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
     from yaml import Loader, Dumper
 
+import stormworkflow
 
 _logger = logging.getLogger(__file__)
+
+CUR_INPUT_VER = Version('0.0.2')
+
+
+def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
+
+    # Only update conf if specified version matches the assumed one
+    if ver != Version('0.0.1'):
+        return ver
+
+
+    _logger.info(
+        "Adding perturbation variables for persistent RMW perturbation"
+    )
+    inout_conf['perturb_vars'] = [
+      'cross_track',
+      'along_track',
+      'radius_of_maximum_winds_persistent',
+      'max_sustained_wind_speed',
+    ]
+
+    return Version('0.0.2')
+
+
+def _handle_input_version(inout_conf):
+
+    if 'input_version' not in inout_conf:
+        ver = CUR_INPUT_VER
+        _logger.warning(
+            f"`input_version` is NOT specified in `input.yaml`; assuming {ver}"
+        )
+
+    ver = Version(inout_conf['input_version'])
+
+    if ver > CUR_INPUT_VER:
+        raise ValueError(
+            f"Input version not supported! Max version supported is {CUR_INPUT_VER}"
+        )
+
+    ver = _handle_input_v0_0_1_to_v0_0_2(inout_conf)
+
+    if ver != CUR_INPUT_VER
+        raise ValueError(
+            f"Could NOT update input to the latest version! Updated to {ver}"
+
 
 def main():
 
@@ -28,11 +74,16 @@ def main():
 
     infile = args.configuration
     if infile is None:
-        _logger.warn('No input configuration provided, using reference file!')
+        _logger.warning(
+            'No input configuration provided, using reference file!'
+        )
         infile = refs.joinpath('input.yaml')
 
     with open(infile, 'r') as yfile:
         conf = yaml.load(yfile, Loader=Loader)
+
+    _handle_input_version(conf)
+    # TODO: Write out the updated conf as a yaml file
 
     wf = scripts.joinpath('workflow.sh')
 

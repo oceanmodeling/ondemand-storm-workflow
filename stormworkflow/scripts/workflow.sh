@@ -56,7 +56,7 @@ function init {
     version $logfile ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
 
-    cp $input_file $run_dir/input.yaml
+    cp $input_file $run_dir/input_asis.yaml
 
     echo $run_dir
 }
