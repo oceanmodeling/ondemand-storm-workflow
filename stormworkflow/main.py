@@ -23,6 +23,8 @@ CUR_INPUT_VER = Version('0.0.2')
 
 def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
 
+    ver = Version(inout_conf['input_version'])
+
     # Only update config if specified version matches the assumed one
     if ver != Version('0.0.1'):
         return ver
@@ -48,7 +50,7 @@ def handle_input_version(inout_conf):
         warnings.warn(
             f"`input_version` is NOT specified in `input.yaml`; assuming {ver}"
         )
-        inout_conf['input_version'] = ver
+        inout_conf['input_version'] = str(ver)
         return
 
     ver = Version(inout_conf['input_version'])
@@ -65,7 +67,7 @@ def handle_input_version(inout_conf):
             f"Could NOT update input to the latest version! Updated to {ver}"
         )
 
-    inout_conf['input_version'] = str(v2)
+    inout_conf['input_version'] = str(ver)
 
 
 def main():
