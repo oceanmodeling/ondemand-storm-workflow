@@ -48,8 +48,11 @@ function init {
     done
 
     logfile=$run_dir/versions.info
+    version $logfile stormworkflow
     version $logfile stormevents
     version $logfile ensembleperturbation
+    version $logfile coupledmodeldriver
+    version $logfile pyschism
     version $logfile ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
 
