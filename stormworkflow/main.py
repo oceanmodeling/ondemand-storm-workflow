@@ -57,9 +57,10 @@ def _handle_input_version(inout_conf):
 
     ver = _handle_input_v0_0_1_to_v0_0_2(inout_conf)
 
-    if ver != CUR_INPUT_VER
+    if ver != CUR_INPUT_VER:
         raise ValueError(
             f"Could NOT update input to the latest version! Updated to {ver}"
+        )
 
 
 def main():
