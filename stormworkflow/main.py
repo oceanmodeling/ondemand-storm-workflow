@@ -22,7 +22,7 @@ CUR_INPUT_VER = Version('0.0.2')
 
 def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
 
-    # Only update conf if specified version matches the assumed one
+    # Only update config if specified version matches the assumed one
     if ver != Version('0.0.1'):
         return ver
 
@@ -62,6 +62,8 @@ def _handle_input_version(inout_conf):
             f"Could NOT update input to the latest version! Updated to {ver}"
         )
 
+    inout_conf['input_version'] = str(v2)
+
 
 def main():
 
@@ -84,7 +86,7 @@ def main():
         conf = yaml.load(yfile, Loader=Loader)
 
     _handle_input_version(conf)
-    # TODO: Write out the updated conf as a yaml file
+    # TODO: Write out the updated config as a yaml file
 
     wf = scripts.joinpath('workflow.sh')
 
