@@ -1,0 +1,40 @@
+---
+input_version: 0.0.1
+
+storm: "florence"
+year: 2018
+suffix: ""
+subset_mesh: 1
+hr_prelandfall: -1
+past_forecast: 1
+hydrology: 0
+use_wwm: 0
+pahm_model: "gahm"
+num_perturb: 2
+sample_rule: "korobov"
+spinup_exec: "pschism_PAHM_TVD-VL"
+hotstart_exec: "pschism_PAHM_TVD-VL"
+
+hpc_solver_nnodes: 3
+hpc_solver_ntasks: 108
+hpc_account: ""
+hpc_partition: ""
+
+RUN_OUT: ""
+L_NWM_DATASET: ""
+L_TPXO_DATASET: ""
+L_LEADTIMES_DATASET: ""
+L_TRACK_DIR: ""
+L_DEM_HI: ""
+L_DEM_LO: ""
+L_MESH_HI: ""
+L_MESH_LO: ""
+L_SHP_DIR: ""
+
+TMPDIR: "/tmp"
+PATH_APPEND: ""
+
+L_SOLVE_MODULES:
+  - "intel/2022.1.2"
+  - "impi/2022.1.2"
+  - "netcdf"
