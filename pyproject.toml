@@ -54,7 +54,7 @@ dependencies = [
     "pytz",
     "pyyaml",
     "shapely>=2",
-    "stormevents>=2.3.2",  # rmax forecast
+    "stormevents>=2.3.4",  # rmax option
     "rasterio",
     "requests",
     "rtree",

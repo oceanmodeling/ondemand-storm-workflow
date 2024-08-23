@@ -176,6 +176,9 @@ def main(args):
     # get has unique forecast time for only the segment we want to
     # perturb, the preceeding entries are 0-hour forecasts from
     # previous forecast_times
+    # 
+    # Here we're working with NA-filled track files, so there's
+    # no need for rmw fill argument
     track_to_perturb = VortexTrack.from_file(
         track_path,
         start_date=perturb_start,

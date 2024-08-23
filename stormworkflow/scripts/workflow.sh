@@ -77,6 +77,7 @@ hurricane_data \
     --hours-before-landfall "$hr_prelandfall" \
     --lead-times "$L_LEADTIMES_DATASET" \
     --preprocessed-tracks-dir "$L_TRACK_DIR" \
+    --rmw-fill "$rmw_fill_method" \
     $storm $year 2>&1 | tee "${run_dir}/output/head_hurricane_data.out"
 
 
