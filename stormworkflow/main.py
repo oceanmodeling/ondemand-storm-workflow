@@ -18,7 +18,7 @@ import stormworkflow
 
 _logger = logging.getLogger(__file__)
 
-CUR_INPUT_VER = Version('0.0.2')
+CUR_INPUT_VER = Version('0.0.3')
 
 
 def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
@@ -43,6 +43,23 @@ def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
     return Version('0.0.2')
 
 
+def _handle_input_v0_0_2_to_v0_0_3(inout_conf):
+
+    ver = Version(inout_conf['input_version'])
+
+    # Only update config if specified version matches the assumed one
+    if ver != Version('0.0.2'):
+        return ver
+
+
+    _logger.info(
+        "Adding RMW fill method default to persistent"
+    )
+    inout_conf['rmw_fill_method'] = 'persistent'
+
+    return Version('0.0.3')
+
+
 def handle_input_version(inout_conf):
 
     if 'input_version' not in inout_conf:
@@ -60,15 +77,17 @@ def handle_input_version(inout_conf):
             f"Input version not supported! Max version supported is {CUR_INPUT_VER}"
         )
 
-    ver = _handle_input_v0_0_1_to_v0_0_2(inout_conf)
+    for fn in [
+            _handle_input_v0_0_1_to_v0_0_2,
+            _handle_input_v0_0_2_to_v0_0_3,
+    ]:
+        ver = fn(inout_conf)
+        inout_conf['input_version'] = str(ver)
 
     if ver != CUR_INPUT_VER:
         raise ValueError(
             f"Could NOT update input to the latest version! Updated to {ver}"
         )
-
-    inout_conf['input_version'] = str(ver)
-
 
 def main():
 

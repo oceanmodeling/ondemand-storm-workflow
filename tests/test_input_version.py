@@ -12,6 +12,7 @@ from stormworkflow.main import handle_input_version, CUR_INPUT_VER
 refs = files('tests.data.refs')
 input_v0_0_1 = refs.joinpath('input_v0.0.1.yaml')
 input_v0_0_2 = refs.joinpath('input_v0.0.2.yaml')
+input_v0_0_3 = refs.joinpath('input_v0.0.3.yaml')
 
 
 def read_conf(infile):
@@ -31,8 +32,13 @@ def conf_v0_0_2():
 
 
 @pytest.fixture
-def conf_latest(conf_v0_0_2):
-    return conf_v0_0_2
+def conf_v0_0_3():
+    return read_conf(input_v0_0_3)
+
+
+@pytest.fixture
+def conf_latest(conf_v0_0_3):
+    return conf_v0_0_3
 
 
 def test_no_version_specified(conf_latest):
@@ -62,6 +68,11 @@ def test_invalid_version_specified(conf_latest):
     assert "invalid version" in str(e.value).lower()
 
 
-def test_v0_0_1_to_v0_0_2(conf_v0_0_1, conf_v0_0_2):
+def test_v0_0_1_to_latest(conf_v0_0_1, conf_latest):
     handle_input_version(conf_v0_0_1)
-    assert conf_v0_0_2 == conf_v0_0_1
+    assert conf_latest == conf_v0_0_1
+
+
+def test_v0_0_2_to_latest(conf_v0_0_2, conf_latest):
+    handle_input_version(conf_v0_0_2)
+    assert conf_latest == conf_v0_0_2
