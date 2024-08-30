@@ -15,9 +15,8 @@ analyze_ensemble \
     --tracks-dir $ENSEMBLE_DIR/track_files
 
 storm_roc_curve \
-    --storm_name ${storm} \
-    --storm_year ${year} \
+    --storm ${storm} \
+    --year ${year} \
     --leadtime ${hr_prelandfall} \
-    --prob_nc_path $ENSEMBLE_DIR/analyze/linear_k1_p1_n0.025/probabilities.nc \
     --obs_df_path ${NHC_OBS} \
-    --save_dir $ENSEMBLE_DIR/analyze/linear_k1_p1_n0.025 
+    --ensemble-dir $ENSEMBLE_DIR 
