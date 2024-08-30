@@ -38,6 +38,7 @@ L_DEM_LO: ""
 L_MESH_HI: ""
 L_MESH_LO: ""
 L_SHP_DIR: ""
+NHC_OBS: ""
 
 TMPDIR: "/tmp"
 PATH_APPEND: ""
