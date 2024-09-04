@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from cartopy.feature import NaturalEarthFeature
 
+import geodatasets
+
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
 
@@ -164,6 +166,8 @@ def main(args):
     # Load probabilities.nc file
     ds_prob = xr.open_dataset(prob_nc_path)
 
+    gdf_countries = gpd.read_file(geodatasets.get_path('naturalearth land'))
+
     #    gdf_countries = gpd.GeoSeries(
     #        NaturalEarthFeature(category='physical', scale='10m', name='land',).geometries(),
     #        crs=4326,
@@ -186,17 +190,17 @@ def main(args):
             )
             df_obs_storm[f'{source}_prob'] = prediction_prob
 
-            #            # Plot probabilities at obs. points
-            #            plot_probabilities(
-            #                df_obs_storm,
-            #                f'{source}_prob',
-            #                gdf_countries,
-            #                f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm}, {year}, {leadtime}-hr leadtime',
-            #                os.path.join(
-            #                    output_directory,
-            #                    f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr.png',
-            #                ),
-            #            )
+            # Plot probabilities at obs. points
+            plot_probabilities(
+                df_obs_storm,
+                f'{source}_prob',
+                gdf_countries,
+                f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm}, {year}, {leadtime}-hr leadtime',
+                os.path.join(
+                    output_directory,
+                    f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr.png',
+                ),
+            )
 
             # Loop through probabilities: calculate hit/miss/... & POD/FAR
             prob_count = -1
