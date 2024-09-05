@@ -13,3 +13,10 @@ combine_ensemble \
 analyze_ensemble \
     --ensemble-dir $ENSEMBLE_DIR \
     --tracks-dir $ENSEMBLE_DIR/track_files
+
+storm_roc_curve \
+    --storm ${storm} \
+    --year ${year} \
+    --leadtime ${hr_prelandfall} \
+    --obs_df_path ${NHC_OBS} \
+    --ensemble-dir $ENSEMBLE_DIR 

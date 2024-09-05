@@ -18,17 +18,32 @@ import stormworkflow
 
 _logger = logging.getLogger(__file__)
 
-CUR_INPUT_VER = Version('0.0.3')
+CUR_INPUT_VER = Version('0.0.4')
+VER_UPDATE_FUNCS = []
 
 
+def _input_version(prev, curr):
+    def decorator(handler):
+        def wrapper(inout_conf):
+            ver = Version(inout_conf['input_version'])
+
+            # Only update config if specified version matches the
+            # assumed one
+            if ver != Version(prev):
+                return ver
+
+            # TODO: Need return values?
+            handler(inout_conf)
+
+            return Version(curr)
+        global VER_UPDATE_FUNCS
+        VER_UPDATE_FUNCS.append(wrapper)
+        return wrapper
+    return decorator
+
+
+@_input_version('0.0.1', '0.0.2')
 def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
-
-    ver = Version(inout_conf['input_version'])
-
-    # Only update config if specified version matches the assumed one
-    if ver != Version('0.0.1'):
-        return ver
-
 
     _logger.info(
         "Adding perturbation variables for persistent RMW perturbation"
@@ -40,24 +55,23 @@ def _handle_input_v0_0_1_to_v0_0_2(inout_conf):
       'max_sustained_wind_speed',
     ]
 
-    return Version('0.0.2')
 
-
+@_input_version('0.0.2', '0.0.3')
 def _handle_input_v0_0_2_to_v0_0_3(inout_conf):
-
-    ver = Version(inout_conf['input_version'])
-
-    # Only update config if specified version matches the assumed one
-    if ver != Version('0.0.2'):
-        return ver
-
 
     _logger.info(
         "Adding RMW fill method default to persistent"
     )
     inout_conf['rmw_fill_method'] = 'persistent'
 
-    return Version('0.0.3')
+
+@_input_version('0.0.3', '0.0.4')
+def _handle_input_v0_0_3_to_v0_0_4(inout_conf):
+
+    _logger.info(
+        "Path to observations"
+    )
+    inout_conf['NHC_OBS'] = ''
 
 
 def handle_input_version(inout_conf):
@@ -77,10 +91,7 @@ def handle_input_version(inout_conf):
             f"Input version not supported! Max version supported is {CUR_INPUT_VER}"
         )
 
-    for fn in [
-            _handle_input_v0_0_1_to_v0_0_2,
-            _handle_input_v0_0_2_to_v0_0_3,
-    ]:
+    for fn in VER_UPDATE_FUNCS:
         ver = fn(inout_conf)
         inout_conf['input_version'] = str(ver)
 
