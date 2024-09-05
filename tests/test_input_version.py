@@ -45,3 +45,8 @@ def test_v0_0_2_to_latest(conf_v0_0_2, conf_latest):
 def test_v0_0_3_to_latest(conf_v0_0_3, conf_latest):
     handle_input_version(conf_v0_0_3)
     assert conf_latest == conf_v0_0_3
+
+
+def test_v0_0_4_to_latest(conf_v0_0_4, conf_latest):
+    handle_input_version(conf_v0_0_4)
+    assert conf_latest == conf_v0_0_4
