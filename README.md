@@ -8,10 +8,16 @@ TO BE COMPLETED...
 
 
 ## References
-- Daneshvar, F., Mani, S., Pringle, W. J., Moghimi, S., Myers, E. 
+- Daneshvar, F., Mani, S., Pringle, W. J., Moghimi, S., Myers, E., (2024).
 _Probabilistic Prediction of Tropical Cyclone (TC) Driven Flood Depth_ 
-_and Extent with a User-Friendly Python Module_ 
-(NOAA Technical Memorandum NOS CS, under review) 
+_and Extent with a User-Friendly Python Module._ 
+NOAA Technical Memorandum NOS CS 59.
+
+- Daneshvar, F., Mani, S., Pringle, W. J., Moghimi, S., Myers, E., ( 2023). 
+_Evaluating the effect of inland hydrology and hurricane model on
+the probabilistic prediction of tropical cyclone (TC) driven coastal flooding._
+American Geophysical Union (AGU) Fall Meeting, December 2023, San Francisco, CA.
+
 - Pringle, W. J., Mani, S., Sargsyan, K., Moghimi, S., Zhang, Y. J.,
 Khazaei, B., Myers, E. (January 2023).
 _Surrogate-Assisted Bayesian Uncertainty Quantification for
