@@ -117,6 +117,13 @@ def _fix_hotstart_issue(ensemble_dir):
         nm_list['opt']['drampwind'] = 0.0
         nm_list.write(pth / 'param.nml', force=True)
 
+def _fix_veg_parameter_issue(ensemble_dir):
+    # See https://github.com/schism-dev/pyschism/issues/126
+    param_nmls = ensemble_dir.glob('**/param.nml')
+    for pth in param_nmls:
+        nm_list = f90nml.read(pth)
+        nm_list['core']['nbins_veg_vert'] = 2
+        nm_list.write(pth, force=True)
 
 def main(args):
 
@@ -277,6 +284,7 @@ def main(args):
     )
 
     _fix_hotstart_issue(workdir)
+    _fix_veg_parameter_issue(workdir) # For newer SCHISM version
     if with_hydrology:
         _fix_nwm_issues(workdir, hires_reg)
     if use_wwm:
