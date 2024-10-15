@@ -11,7 +11,7 @@ TO BE COMPLETED...
 - Daneshvar, F., Mani, S., Pringle, W. J., Moghimi, S., Myers, E., (2024).
 _Probabilistic Prediction of Tropical Cyclone (TC) Driven Flood Depth_ 
 _and Extent with a User-Friendly Python Module._ 
-NOAA Technical Memorandum NOS CS 59.
+NOAA Technical Memorandum NOS CS 59. https://repository.library.noaa.gov/view/noaa/66123
 
 - Daneshvar, F., Mani, S., Pringle, W. J., Moghimi, S., Myers, E., ( 2023). 
 _Evaluating the effect of inland hydrology and hurricane model on
