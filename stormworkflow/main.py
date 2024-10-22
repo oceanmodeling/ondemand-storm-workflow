@@ -18,7 +18,7 @@ import stormworkflow
 
 _logger = logging.getLogger(__file__)
 
-CUR_INPUT_VER = Version('0.0.4')
+CUR_INPUT_VER = Version('0.0.5')
 VER_UPDATE_FUNCS = []
 
 
@@ -72,6 +72,15 @@ def _handle_input_v0_0_3_to_v0_0_4(inout_conf):
         "Path to observations"
     )
     inout_conf['NHC_OBS'] = ''
+
+
+@_input_version('0.0.4', '0.0.5')
+def _handle_input_v0_0_4_to_v0_0_5(inout_conf):
+
+    _logger.info("Adding perturbation features")
+    inout_conf['perturb_features'] = [
+      'isotach_adjustment',
+    ]
 
 
 def handle_input_version(inout_conf):
