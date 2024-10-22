@@ -18,7 +18,7 @@ import stormworkflow
 
 _logger = logging.getLogger(__file__)
 
-CUR_INPUT_VER = Version('0.0.4')
+CUR_INPUT_VER = Version('0.0.5')
 VER_UPDATE_FUNCS = []
 
 
