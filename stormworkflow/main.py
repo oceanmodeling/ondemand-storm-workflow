@@ -74,6 +74,15 @@ def _handle_input_v0_0_3_to_v0_0_4(inout_conf):
     inout_conf['NHC_OBS'] = ''
 
 
+@_input_version('0.0.4', '0.0.5')
+def _handle_input_v0_0_4_to_v0_0_5(inout_conf):
+
+    _logger.info("Adding perturbation features")
+    inout_conf['perturb_features'] = [
+      'isotach_adjustment',
+    ]
+
+
 def handle_input_version(inout_conf):
 
     if 'input_version' not in inout_conf:

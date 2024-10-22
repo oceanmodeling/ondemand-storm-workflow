@@ -22,7 +22,7 @@ from coupledmodeldriver.configure import (
 from coupledmodeldriver.generate import SCHISMRunConfiguration
 from coupledmodeldriver.generate.schism.script import SchismEnsembleGenerationJob
 from coupledmodeldriver.generate import generate_schism_configuration
-from ensembleperturbation.perturbation.atcf import perturb_tracks
+from ensembleperturbation.perturbation.atcf import perturb_tracks, PerturberFeatures
 from pylib_essentials.schism_file import (
     read_schism_hgrid_cached,
     schism_bpfile,
@@ -137,6 +137,9 @@ def main(args):
     use_wwm = args.use_wwm
     with_hydrology = args.with_hydrology
     pahm_model = args.pahm_model
+    setup_features = PerturberFeatures.NONE
+    for feat in args.perturb_features:
+        setup_features |= PerturberFeatures[feat.upper()]
 
     workdir = out_dir
     mesh_file = mesh_dir / 'mesh_w_bdry.grd'
@@ -208,6 +211,7 @@ def main(args):
         overwrite=True,
         file_deck=file_deck,
         advisories=[advisory],
+        features=setup_features,
     )
 
     if perturb_start != model_start_time:
@@ -345,6 +349,7 @@ def parse_arguments():
     argument_parser.add_argument('--use-wwm', action='store_true')
     argument_parser.add_argument('--with-hydrology', action='store_true')
     argument_parser.add_argument('--pahm-model', choices=['gahm', 'symmetric'], default='gahm')
+    argument_parser.add_argument('--perturb-features', nargs='+', type=str, default=[PerturberFeatures.ISOTACH_ADJUSTMENT.name])
     argument_parser.add_argument('--variables', nargs='+', type=str)
 
     argument_parser.add_argument('name', help='name of the storm', type=str)

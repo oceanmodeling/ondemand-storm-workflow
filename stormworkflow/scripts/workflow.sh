@@ -139,6 +139,7 @@ PREP_KWDS+=" --variables $perturb_vars"
 if [ $use_wwm == 1 ]; then PREP_KWDS+=" --use-wwm"; fi
 if [ $hydrology == 1 ]; then PREP_KWDS+=" --with-hydrology"; fi
 PREP_KWDS+=" --pahm-model $pahm_model"
+PREP_KWDS+=" --perturb-features $perturb_features"
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
 setup_id=$(sbatch \
@@ -146,7 +147,7 @@ setup_id=$(sbatch \
     --wait \
     --job-name=prep_$tag \
     --parsable \
-    --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year,IMG="$L_IMG_DIR/prep.sif" \
+    --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year \
     $run_dir/slurm/prep.sbatch \
 )
 
@@ -154,7 +155,6 @@ setup_id=$(sbatch \
 echo "Launching runs"
 SCHISM_SHARED_ENV=""
 SCHISM_SHARED_ENV+="ALL"
-SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
 SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
@@ -185,5 +185,5 @@ sbatch \
     --output "${run_dir}/output/slurm-%j.post.out" \
     --job-name=post_$tag \
     -d afterok${joblist} \
-    --export=ALL,IMG="$L_IMG_DIR/prep.sif",ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
+    --export=ALL,ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
     $run_dir/slurm/post.sbatch
