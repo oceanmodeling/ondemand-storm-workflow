@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from cartopy.feature import NaturalEarthFeature
 from geodatasets import get_path
+from sklearn.calibration import calibration_curve
 
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
@@ -148,9 +149,9 @@ def main(args):
     max_distance = 1000  # [in meters] to set distance_upper_bound
     max_neighbors = 10  # to set k
 
+    # creating arrays for ROC and TS plots
     blank_arr = np.empty((len(thresholds_ft), 1, 1, len(sources), len(probabilities)))
     blank_arr[:] = np.nan
-
     hit_arr = blank_arr.copy()
     miss_arr = blank_arr.copy()
     false_alarm_arr = blank_arr.copy()
@@ -165,6 +166,12 @@ def main(args):
     obs_coordinates = stack_station_coordinates(
         df_obs_storm.Longitude.values, df_obs_storm.Latitude.values
     )
+
+    # creating arrays for reliability diagram
+    blank_arr = np.empty((len(thresholds_ft), 1, 1, len(sources), len(df_obs_storm)))
+    blank_arr[:] = np.nan
+    obs_true_arr = blank_arr.copy()
+    pred_prob_arr = blank_arr.copy()
 
     # Load probabilities.nc file
     ds_prob = xr.open_dataset(prob_nc_path)
@@ -206,6 +213,12 @@ def main(args):
                     ),
                 )
 
+            # Enter observed above threshold and prediction probability into array
+            obs_true_arr[threshold_count, 0, 0, source_count, :] = (
+                df_obs_storm[obs_attribute] > threshold
+            )
+            pred_prob_arr[threshold_count, 0, 0, source_count, :] = prediction_prob
+
             # Loop through probabilities: calculate hit/miss/... & POD/FAR
             prob_count = -1
             for prob in probabilities:
@@ -229,6 +242,7 @@ def main(args):
             leadtime=[leadtime],
             source=sources,
             prob=probabilities,
+            points=range(len(df_obs_storm)),
         ),
         data_vars=dict(
             hit=(['threshold', 'storm', 'leadtime', 'source', 'prob'], hit_arr),
@@ -243,12 +257,18 @@ def main(args):
             ),
             POD=(['threshold', 'storm', 'leadtime', 'source', 'prob'], POD_arr),
             FAR=(['threshold', 'storm', 'leadtime', 'source', 'prob'], FAR_arr),
+            obs_true=(['threshold', 'storm', 'leadtime', 'source', 'points'], obs_true_arr),
+            pred_prob=(['threshold', 'storm', 'leadtime', 'source', 'points'], pred_prob_arr),
         ),
     )
-    ds_ROC.to_netcdf(os.path.join(output_directory, f'{storm}_{year}_{leadtime}hr_POD_FAR.nc'))
+    ds_ROC.to_netcdf(
+        os.path.join(
+            output_directory, f'{storm}_{year}_{leadtime}hr_probabilistic_evaluation_stats.nc'
+        )
+    )
 
     # plot ROC curves
-    colormarker_list = ['bs', 'k']
+    colormarker_list = ['bs', 'kx']
     linestyle_list = ['--', '-']
     threshold_count = -1
     for threshold in thresholds_ft:
@@ -268,6 +288,7 @@ def main(args):
                 )
             )
             label = f'{source}, AUC={AUC:.2f}'
+            colormarker = colormarker_list[source_count]
             if source == 'surrogate':
                 best_res = (
                     POD_arr[threshold_count, 0, 0, source_count, :]
@@ -277,12 +298,13 @@ def main(args):
                 plt.plot(
                     FAR_arr[threshold_count, 0, 0, source_count, best_res],
                     POD_arr[threshold_count, 0, 0, source_count, best_res],
-                    colormarker_list[source_count][0] + 'x',
+                    colormarker_list[source_count],
                 )
+                colormarker = colormarker_list[source_count][0]
             plt.plot(
                 FAR_arr[threshold_count, 0, 0, source_count, :],
                 POD_arr[threshold_count, 0, 0, source_count, :],
-                colormarker_list[source_count],
+                colormarker,
                 label=label,
                 linestyle=linestyle_list[source_count],
                 markersize=5,
@@ -344,6 +366,51 @@ def main(args):
             os.path.join(
                 output_directory,
                 f'TS_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
+            )
+        )
+        plt.close()
+
+    # plot reliability curves
+    threshold_count = -1
+    for threshold in thresholds_ft:
+        threshold_count += 1
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        plt.axline(
+            (0.0, 0.0), (1.0, 1.0), linestyle='--', color='grey', label='perfect reliability'
+        )
+        source_count = -1
+        for source in sources:
+            source_count += 1
+            true_prob, pred_prob = calibration_curve(
+                obs_true_arr[threshold_count, 0, 0, source_count, :],
+                pred_prob_arr[threshold_count, 0, 0, source_count, :],
+                n_bins=5,
+                strategy='uniform',
+            )
+            plt.plot(
+                pred_prob,
+                true_prob,
+                colormarker_list[source_count],
+                label=f'{source}',
+                linestyle=linestyle_list[source_count],
+                markersize=5,
+            )
+
+        plt.xlim([-0.01, 1.01])
+        plt.ylim([-0.01, 1.01])
+        plt.legend(loc='lower right')
+        plt.xlabel(f'Predicted probability of exceedance')
+        plt.ylabel(f'Observed fraction of exceedances')
+        plt.grid(True)
+
+        plt.title(
+            f'{storm}_{year}, {leadtime}-hr leadtime, {threshold} ft threshold: N={len(df_obs_storm)}'
+        )
+        plt.savefig(
+            os.path.join(
+                output_directory,
+                f'REL_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
             )
         )
         plt.close()
