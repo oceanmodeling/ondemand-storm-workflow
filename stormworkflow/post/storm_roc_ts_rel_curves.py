@@ -423,11 +423,11 @@ def cli():
     parser.add_argument('--year', help='year of the storm', type=int)
     parser.add_argument('--leadtime', help='OFCL track leadtime hr', type=int)
     parser.add_argument('--obs_df_path', help='path to NHC obs data', type=str)
-    parser.add_argument('--ensemble_dir', help='path to ensemble.dir', type=str)
+    parser.add_argument('--ensemble-dir', help='path to ensemble.dir', type=str)
 
     # optional
     parser.add_argument(
-        '--output_dir',
+        '--output-dir',
         help='directory to save the outputs of this function',
         default=None,
         type=str,
