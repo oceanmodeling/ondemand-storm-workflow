@@ -307,6 +307,47 @@ def main(args):
         )
         plt.close()
 
+    # plot TS curves
+    threshold_count = -1
+    for threshold in thresholds_ft:
+        threshold_count += 1
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        source_count = -1
+        for source in sources:
+            source_count += 1
+            # TS = hits / (hits + misses + false alarms)
+            TS = hit_arr[threshold_count, 0, 0, source_count, :] / (
+                hit_arr[threshold_count, 0, 0, source_count, :]
+                + miss_arr[threshold_count, 0, 0, source_count, :]
+                + false_alarm_arr[threshold_count, 0, 0, source_count, :]
+            )
+
+            plt.plot(
+                probabilities,
+                TS,
+                colormarker_list[source_count][0],
+                label=f'{source}',
+                linestyle=linestyle_list[source_count],
+            )
+        plt.legend(loc='upper right')
+        plt.ylabel(f'Threat Score')
+        plt.xlabel(f'probability of exceedance')
+        plt.xlim([-0.01, 1.01])
+        plt.ylim([-0.01, 1.01])
+        plt.grid(True)
+
+        plt.title(
+            f'{storm}_{year}, {leadtime}-hr leadtime, {threshold} ft threshold: N={len(df_obs_storm)}'
+        )
+        plt.savefig(
+            os.path.join(
+                output_directory,
+                f'TS_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
+            )
+        )
+        plt.close()
+
 
 def cli():
     parser = argparse.ArgumentParser()
