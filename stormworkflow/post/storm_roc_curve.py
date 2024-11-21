@@ -9,8 +9,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 from pathlib import Path
 from cartopy.feature import NaturalEarthFeature
-
-import geodatasets
+from geodatasets import get_path
 
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
@@ -124,18 +123,22 @@ def main(args):
     leadtime = args.leadtime
     obs_df_path = Path(args.obs_df_path)
     ensemble_dir = Path(args.ensemble_dir)
+    output_directory = args.output_dir
+    plot_prob_map = args.plot_prob_map
 
-    output_directory = ensemble_dir / 'analyze/linear_k1_p1_n0.025'
-    prob_nc_path = output_directory / 'probabilities.nc'
+    input_directory = ensemble_dir / 'analyze/linear_k1_p1_n0.025'
+    prob_nc_path = input_directory / 'probabilities.nc'
+    if output_directory is None:
+        output_directory = input_directory
 
     if leadtime == -1:
         leadtime = 48
 
     # *.nc file coordinates
-    thresholds_ft = [3, 6, 9]  # in ft
+    thresholds_ft = [3, 4, 5, 6, 9]  # in ft
     thresholds_m = [round(i * 0.3048, 4) for i in thresholds_ft]  # convert to meter
     sources = ['model', 'surrogate']
-    probabilities = [0.0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    probabilities = list(np.linspace(0, 1, 101))
 
     # attributes of input files
     prediction_variable = 'probabilities'
@@ -166,7 +169,7 @@ def main(args):
     # Load probabilities.nc file
     ds_prob = xr.open_dataset(prob_nc_path)
 
-    gdf_countries = gpd.read_file(geodatasets.get_path('naturalearth land'))
+    gdf_countries = gpd.read_file(get_path('naturalearth land'))
 
     #    gdf_countries = gpd.GeoSeries(
     #        NaturalEarthFeature(category='physical', scale='10m', name='land',).geometries(),
@@ -191,16 +194,17 @@ def main(args):
             df_obs_storm[f'{source}_prob'] = prediction_prob
 
             # Plot probabilities at obs. points
-            plot_probabilities(
-                df_obs_storm,
-                f'{source}_prob',
-                gdf_countries,
-                f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm}, {year}, {leadtime}-hr leadtime',
-                os.path.join(
-                    output_directory,
-                    f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr.png',
-                ),
-            )
+            if plot_prob_map:
+                plot_probabilities(
+                    df_obs_storm,
+                    f'{source}_prob',
+                    gdf_countries,
+                    f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm}, {year}, {leadtime}-hr leadtime',
+                    os.path.join(
+                        output_directory,
+                        f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr.png',
+                    ),
+                )
 
             # Loop through probabilities: calculate hit/miss/... & POD/FAR
             prob_count = -1
@@ -244,8 +248,8 @@ def main(args):
     ds_ROC.to_netcdf(os.path.join(output_directory, f'{storm}_{year}_{leadtime}hr_POD_FAR.nc'))
 
     # plot ROC curves
-    marker_list = ['s', 'x']
-    linestyle_list = ['dashed', 'dotted']
+    colormarker_list = ['bs', 'k']
+    linestyle_list = ['--', '-']
     threshold_count = -1
     for threshold in thresholds_ft:
         threshold_count += 1
@@ -257,19 +261,44 @@ def main(args):
         source_count = -1
         for source in sources:
             source_count += 1
+            AUC = abs(
+                np.trapz(
+                    POD_arr[threshold_count, 0, 0, source_count, :],
+                    x=FAR_arr[threshold_count, 0, 0, source_count, :],
+                )
+            )
+            label = f'{source}, AUC={AUC:.2f}'
+            if source == 'surrogate':
+                best_res = (
+                    POD_arr[threshold_count, 0, 0, source_count, :]
+                    - FAR_arr[threshold_count, 0, 0, source_count, :]
+                ).argmax()
+                label = f'{label}, x @ p({probabilities[best_res]:.2f})'
+                plt.plot(
+                    FAR_arr[threshold_count, 0, 0, source_count, best_res],
+                    POD_arr[threshold_count, 0, 0, source_count, best_res],
+                    colormarker_list[source_count][0] + 'x',
+                )
             plt.plot(
                 FAR_arr[threshold_count, 0, 0, source_count, :],
                 POD_arr[threshold_count, 0, 0, source_count, :],
-                label=f'{source}',
-                marker=marker_list[source_count],
+                colormarker_list[source_count],
+                label=label,
                 linestyle=linestyle_list[source_count],
                 markersize=5,
             )
-        plt.legend()
-        plt.xlabel('False Alarm Rate')
-        plt.ylabel('Probability of Detection')
+        plt.legend(loc='lower right')
+        npos = int(hit_arr[threshold_count, 0, 0, 0, 0])
+        nneg = int(false_alarm_arr[threshold_count, 0, 0, 0, 0])
+        plt.xlabel(f'False Alarm Rate, N={nneg}')
+        plt.ylabel(f'Probability of Detection, N={npos}')
+        plt.xlim([-0.01, 1.01])
+        plt.ylim([-0.01, 1.01])
+        plt.grid(True)
 
-        plt.title(f'{storm}_{year}, {leadtime}-hr leadtime, {threshold} ft threshold')
+        plt.title(
+            f'{storm}_{year}, {leadtime}-hr leadtime, {threshold} ft threshold: N={len(df_obs_storm)}'
+        )
         plt.savefig(
             os.path.join(
                 output_directory,
@@ -286,7 +315,22 @@ def cli():
     parser.add_argument('--year', help='year of the storm', type=int)
     parser.add_argument('--leadtime', help='OFCL track leadtime hr', type=int)
     parser.add_argument('--obs_df_path', help='path to NHC obs data', type=str)
-    parser.add_argument('--ensemble-dir', help='path to ensemble.dir', type=str)
+    parser.add_argument('--ensemble_dir', help='path to ensemble.dir', type=str)
+
+    # optional
+    parser.add_argument(
+        '--output_dir',
+        help='directory to save the outputs of this function',
+        default=None,
+        type=str,
+    )
+
+    parser.add_argument(
+        '--plot_prob_map',
+        help='plot the prediction probability at observations maps',
+        default=True,
+        action=argparse.BooleanOptionalAction,
+    )
 
     main(parser.parse_args())
 
