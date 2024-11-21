@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.py'
+      - '.github/workflows/tests.yml'
+      - 'pyproject.toml'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.9', '3.10', '3.11' ]
+    steps:
+      - name: clone repository
+        uses: actions/checkout@v4
+      - name: conda virtual environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          init-shell: bash
+          environment-file: environment.yml
+      - name: install the package
+        run: pip install ".[dev]"
+        shell: micromamba-shell {0}
+      - name: run tests
+        run: pytest
+        shell: micromamba-shell {0}

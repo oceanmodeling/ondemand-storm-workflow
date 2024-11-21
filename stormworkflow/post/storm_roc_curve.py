@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from cartopy.feature import NaturalEarthFeature
 
+import geodatasets
+
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
 
@@ -117,12 +119,17 @@ def calculate_POD_FAR(hit, miss, false_alarm, correct_neg):
 
 
 def main(args):
-    storm_name = args.storm_name.capitalize()
-    storm_year = args.storm_year
+    storm = args.storm.capitalize()
+    year = args.year
     leadtime = args.leadtime
-    prob_nc_path = Path(args.prob_nc_path)
     obs_df_path = Path(args.obs_df_path)
-    save_dir = args.save_dir
+    ensemble_dir = Path(args.ensemble_dir)
+
+    output_directory = ensemble_dir / 'analyze/linear_k1_p1_n0.025'
+    prob_nc_path = output_directory / 'probabilities.nc'
+
+    if leadtime == -1:
+        leadtime = 48
 
     # *.nc file coordinates
     thresholds_ft = [3, 6, 9]  # in ft
@@ -150,7 +157,7 @@ def main(args):
 
     # Load obs file, extract storm obs points and coordinates
     df_obs = pd.read_csv(obs_df_path)
-    Event_name = f'{storm_name}_{storm_year}'
+    Event_name = f'{storm}_{year}'
     df_obs_storm = df_obs[df_obs.Event == Event_name]
     obs_coordinates = stack_station_coordinates(
         df_obs_storm.Longitude.values, df_obs_storm.Latitude.values
@@ -159,10 +166,12 @@ def main(args):
     # Load probabilities.nc file
     ds_prob = xr.open_dataset(prob_nc_path)
 
-    gdf_countries = gpd.GeoSeries(
-        NaturalEarthFeature(category='physical', scale='10m', name='land',).geometries(),
-        crs=4326,
-    )
+    gdf_countries = gpd.read_file(geodatasets.get_path('naturalearth land'))
+
+    #    gdf_countries = gpd.GeoSeries(
+    #        NaturalEarthFeature(category='physical', scale='10m', name='land',).geometries(),
+    #        crs=4326,
+    #    )
 
     # Loop through thresholds and sources and find corresponding values from probabilities.nc
     threshold_count = -1
@@ -186,10 +195,10 @@ def main(args):
                 df_obs_storm,
                 f'{source}_prob',
                 gdf_countries,
-                f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm_name}, {storm_year}, {leadtime}-hr leadtime',
+                f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm}, {year}, {leadtime}-hr leadtime',
                 os.path.join(
-                    save_dir,
-                    f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm_name}_{storm_year}_{leadtime}-hr.png',
+                    output_directory,
+                    f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr.png',
                 ),
             )
 
@@ -212,7 +221,7 @@ def main(args):
     ds_ROC = xr.Dataset(
         coords=dict(
             threshold=thresholds_ft,
-            storm=[storm_name],
+            storm=[storm],
             leadtime=[leadtime],
             source=sources,
             prob=probabilities,
@@ -232,9 +241,7 @@ def main(args):
             FAR=(['threshold', 'storm', 'leadtime', 'source', 'prob'], FAR_arr),
         ),
     )
-    ds_ROC.to_netcdf(
-        os.path.join(save_dir, f'{storm_name}_{storm_year}_{leadtime}hr_leadtime_POD_FAR.nc')
-    )
+    ds_ROC.to_netcdf(os.path.join(output_directory, f'{storm}_{year}_{leadtime}hr_POD_FAR.nc'))
 
     # plot ROC curves
     marker_list = ['s', 'x']
@@ -262,12 +269,11 @@ def main(args):
         plt.xlabel('False Alarm Rate')
         plt.ylabel('Probability of Detection')
 
-        plt.title(
-            f'{storm_name}_{storm_year}, {leadtime}-hr leadtime, {threshold} ft threshold'
-        )
+        plt.title(f'{storm}_{year}, {leadtime}-hr leadtime, {threshold} ft threshold')
         plt.savefig(
             os.path.join(
-                save_dir, f'ROC_{storm_name}_{leadtime}hr_leadtime_{threshold}_ft.png'
+                output_directory,
+                f'ROC_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
             )
         )
         plt.close()
@@ -276,20 +282,11 @@ def main(args):
 def cli():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--storm_name', help='name of the storm', type=str)
-
-    parser.add_argument('--storm_year', help='year of the storm', type=int)
-
+    parser.add_argument('--storm', help='name of the storm', type=str)
+    parser.add_argument('--year', help='year of the storm', type=int)
     parser.add_argument('--leadtime', help='OFCL track leadtime hr', type=int)
-
-    parser.add_argument('--prob_nc_path', help='path to probabilities.nc', type=str)
-
-    parser.add_argument('--obs_df_path', help='Path to observations dataframe', type=str)
-
-    # optional
-    parser.add_argument(
-        '--save_dir', help='directory for saving analysis', default=os.getcwd(), type=str
-    )
+    parser.add_argument('--obs_df_path', help='path to NHC obs data', type=str)
+    parser.add_argument('--ensemble-dir', help='path to ensemble.dir', type=str)
 
     main(parser.parse_args())
 

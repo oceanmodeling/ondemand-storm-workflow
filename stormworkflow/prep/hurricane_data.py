@@ -17,12 +17,14 @@ from typing import Optional, List
 
 import pandas as pd
 import geopandas as gpd
+import geodatasets
 from searvey.coops import COOPS_TidalDatum
 from searvey.coops import COOPS_TimeZone
 from searvey.coops import COOPS_Units
 from shapely.geometry import box, base
 from stormevents import StormEvent
 from stormevents.nhc import VortexTrack
+from stormevents.nhc.const import RMWFillMethod
 from stormevents.nhc.track import (
     combine_tracks,
     correct_ofcl_based_on_carq_n_hollandb,
@@ -37,7 +39,7 @@ logging.basicConfig(
     format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S')
 
-
+NE_LOW_ADMIN = 'https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip'
 
 def trackstart_from_file(
     leadtime_file: Optional[pathlib.Path],
@@ -143,12 +145,15 @@ def main(args):
     hr_before_landfall = args.hours_before_landfall
     lead_times = args.lead_times
     track_dir = args.preprocessed_tracks_dir
-    countries_shpfile = args.countries_polygon
+    rmw_fill = RMWFillMethod[args.rmw_fill.lower()]
 
     if hr_before_landfall < 0:
         hr_before_landfall = 48
 
-    ne_low = gpd.read_file(countries_shpfile)
+    # Caching for next steps!
+    geodatasets.get_path('naturalearth land')
+
+    ne_low = gpd.read_file(NE_LOW_ADMIN)
     shp_US = ne_low[ne_low.NAME_EN.isin(['United States of America', 'Puerto Rico'])].unary_union
 
     logger.info("Fetching hurricane info...")
@@ -180,7 +185,8 @@ def main(args):
 
         advisory = 'OFCL'
         if not local_track_file.is_file():
-            # Find and pick a single advisory based on priority
+            # Find and pick a single advisory based on priority, the
+            # track is only used to get the available advisories
             temp_track = event.track(file_deck='a')
             adv_avail = temp_track.unfiltered_data.advisory.unique()
             adv_order = ['OFCL', 'HWRF', 'HMON', 'CARQ']
@@ -190,41 +196,65 @@ def main(args):
                     advisory = adv
                     break
 
-            # TODO: THIS IS NO LONGER RELEVANT IF WE FAKE RMWP AS OFCL!
             if advisory == "OFCL" and "CARQ" not in adv_avail:
                 raise ValueError(
                     "OFCL advisory needs CARQ for fixing missing variables!"
                 )
 
-            track = VortexTrack(nhc_code, file_deck='a', advisories=[advisory])
+            track = VortexTrack(
+                nhc_code,
+                file_deck='a',
+                advisories=[advisory],
+                rmw_fill=rmw_fill,
+            )
 
         else:  # read from preprocessed file
+
             advisory = 'OFCL'
             
             # If a file exists, use the local file
             track_raw = pd.read_csv(local_track_file, header=None, dtype=str)
-            assert len(track_raw[4].unique()) == 1
+            # The provided tracks should have a single advisory type,
+            # e.g. in NHC adjusted track files the value is RMWP
+            if len(track_raw[4].unique()) != 1:
+                raise RuntimeError(
+                    "Only single advisory-name track files are supported!"
+                )
+            # Treat the existing advisory as if it's OFCL so that 
+            # stormevents supports reading it
             track_raw[4] = advisory
 
             with tempfile.NamedTemporaryFile() as tmp:
                 track_raw.to_csv(tmp.name, header=False, index=False)
 
+                # Track read from file is NOT corrected because it
+                # does NOT have CARQ advisory
                 unfixed_track = VortexTrack(
                     tmp.name, file_deck='a', advisories=[advisory]
                 )
+                # Since we're only getting CARQ, there's no need to 
+                # pass rmw fill method
                 carq_track = event.track(file_deck='a', advisories=['CARQ'])
                 unfix_dict = {
                     **separate_tracks(unfixed_track.data),
                     **separate_tracks(carq_track.data),
                 }
 
-                fix_dict = correct_ofcl_based_on_carq_n_hollandb(unfix_dict)
+                # Fix the file track with the fetched CARQ; if RMW
+                # is already filled, it fills out other missing values
+                fix_dict = correct_ofcl_based_on_carq_n_hollandb(
+                    unfix_dict, rmw_fill=rmw_fill
+                )
                 fix_track = combine_tracks(fix_dict)
 
+                # Create a new VortexTrack object from the datasets.
+                # Since the values are already filled in, there's
+                # no need to fill the rmw!
                 track = VortexTrack(
                     fix_track[fix_track.advisory == advisory],
                     file_deck='a',
-                    advisories=[advisory]
+                    advisories=[advisory],
+                    rmw_fill=RMWFillMethod.none,
                 )
 
 
@@ -416,10 +446,10 @@ def cli():
     )
 
     parser.add_argument(
-        "--countries-polygon",
-        type=pathlib.Path,
-        help="Shapefile containing country polygons",
-    )
+        '--rmw-fill',
+        type=str,
+        help="Method to use to fill missing RMW data for OFCL track",
+        )
 
     args = parser.parse_args()
     

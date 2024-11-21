@@ -22,7 +22,7 @@ from coupledmodeldriver.configure import (
 from coupledmodeldriver.generate import SCHISMRunConfiguration
 from coupledmodeldriver.generate.schism.script import SchismEnsembleGenerationJob
 from coupledmodeldriver.generate import generate_schism_configuration
-from ensembleperturbation.perturbation.atcf import perturb_tracks
+from ensembleperturbation.perturbation.atcf import perturb_tracks, PerturberFeatures
 from pylib_essentials.schism_file import (
     read_schism_hgrid_cached,
     schism_bpfile,
@@ -107,6 +107,24 @@ def _fix_nwm_issues(ensemble_dir, hires_shapefile):
             _relocate_source_sink(pth, hires_shapefile)
 
 
+def _fix_hotstart_issue(ensemble_dir):
+    hotstart_dirs = ensemble_dir.glob('runs/*')
+    for pth in hotstart_dirs:
+        nm_list = f90nml.read(pth / 'param.nml')
+        nm_list['opt']['dramp'] = 0.0
+        nm_list['opt']['drampbc'] = 0.0
+        nm_list['opt']['dramp_ss'] = 0.0
+        nm_list['opt']['drampwind'] = 0.0
+        nm_list.write(pth / 'param.nml', force=True)
+
+def _fix_veg_parameter_issue(ensemble_dir):
+    # See https://github.com/schism-dev/pyschism/issues/126
+    param_nmls = ensemble_dir.glob('**/param.nml')
+    for pth in param_nmls:
+        nm_list = f90nml.read(pth)
+        nm_list['core']['nbins_veg_vert'] = 2
+        nm_list.write(pth, force=True)
+
 def main(args):
 
     track_path = args.track_file
@@ -119,6 +137,9 @@ def main(args):
     use_wwm = args.use_wwm
     with_hydrology = args.with_hydrology
     pahm_model = args.pahm_model
+    setup_features = PerturberFeatures.NONE
+    for feat in args.perturb_features:
+        setup_features |= PerturberFeatures[feat.upper()]
 
     workdir = out_dir
     mesh_file = mesh_dir / 'mesh_w_bdry.grd'
@@ -165,6 +186,9 @@ def main(args):
     # get has unique forecast time for only the segment we want to
     # perturb, the preceeding entries are 0-hour forecasts from
     # previous forecast_times
+    # 
+    # Here we're working with NA-filled track files, so there's
+    # no need for rmw fill argument
     track_to_perturb = VortexTrack.from_file(
         track_path,
         start_date=perturb_start,
@@ -178,12 +202,7 @@ def main(args):
         perturbations=args.num_perturbations,
         directory=workdir / 'track_files',
         storm=workdir / 'track_to_perturb.dat',
-        variables=[
-            'cross_track',
-            'along_track',
-            'radius_of_maximum_winds', # TODO: add option for persistent
-            'max_sustained_wind_speed',
-        ],
+        variables=args.variables,
         sample_from_distribution=args.sample_from_distribution,
         sample_rule=args.sample_rule,
         quadrature=args.quadrature,
@@ -192,6 +211,7 @@ def main(args):
         overwrite=True,
         file_deck=file_deck,
         advisories=[advisory],
+        features=setup_features,
     )
 
     if perturb_start != model_start_time:
@@ -267,6 +287,8 @@ def main(args):
         }
     )
 
+    _fix_hotstart_issue(workdir)
+    _fix_veg_parameter_issue(workdir) # For newer SCHISM version
     if with_hydrology:
         _fix_nwm_issues(workdir, hires_reg)
     if use_wwm:
@@ -327,6 +349,8 @@ def parse_arguments():
     argument_parser.add_argument('--use-wwm', action='store_true')
     argument_parser.add_argument('--with-hydrology', action='store_true')
     argument_parser.add_argument('--pahm-model', choices=['gahm', 'symmetric'], default='gahm')
+    argument_parser.add_argument('--perturb-features', nargs='+', type=str, default=[PerturberFeatures.ISOTACH_ADJUSTMENT.name])
+    argument_parser.add_argument('--variables', nargs='+', type=str)
 
     argument_parser.add_argument('name', help='name of the storm', type=str)
 

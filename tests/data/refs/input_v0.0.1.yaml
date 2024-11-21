@@ -1,5 +1,5 @@
 ---
-input_version: 0.0.5
+input_version: 0.0.1
 
 storm: "florence"
 year: 2018
@@ -12,16 +12,6 @@ use_wwm: 0
 pahm_model: "gahm"
 num_perturb: 2
 sample_rule: "korobov"
-perturb_vars:
-  - "cross_track"
-  - "along_track"
-#  - "radius_of_maximum_winds"
-  - "radius_of_maximum_winds_persistent"
-  - "max_sustained_wind_speed"
-rmw_fill_method: "persistent"
-perturb_features:
-  - "isotach_adjustment"
-
 spinup_exec: "pschism_PAHM_TVD-VL"
 hotstart_exec: "pschism_PAHM_TVD-VL"
 
@@ -40,7 +30,6 @@ L_DEM_LO: ""
 L_MESH_HI: ""
 L_MESH_LO: ""
 L_SHP_DIR: ""
-NHC_OBS: ""
 
 TMPDIR: "/tmp"
 PATH_APPEND: ""

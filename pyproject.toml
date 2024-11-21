@@ -21,7 +21,7 @@ description = "A set of scripts to generate probabilistic storm surge results!"
 
 license = {file = "LICENSE"}
 
-requires-python = ">= 3.8, < 3.11"
+requires-python = ">= 3.9, < 3.12"
 
 dependencies = [
     "cartopy",
@@ -30,22 +30,22 @@ dependencies = [
     "cfgrib",
     "cfunits",
     "chaospy>=4.2.7",
-    "coupledmodeldriver>=1.6.6",
+    "coupledmodeldriver>=1.7.1.post1",
     "colored-traceback",
     "cmocean",
     "dask",
     "dask-jobqueue",
-    "ensembleperturbation>=1.1.2",
+    "ensembleperturbation>=1.3.4",  # perturb feature
     "fiona",
     "geoalchemy2",
-    "geopandas==0.14",  # to address AttributeError. Should be fixed later in EnsemblePerturbation
-#    "geopandas",
+    "geopandas",
     "matplotlib",
     "mpi4py",
     "netCDF4",
     "numpy",
     "numba",
     "ocsmesh==1.5.3",
+    "packaging",
     "pandas",
     "pyarrow",
     "pygeos",
@@ -54,7 +54,7 @@ dependencies = [
     "pytz",
     "pyyaml",
     "shapely>=2",
-    "stormevents==2.2.4",
+    "stormevents>=2.3.4",  # rmax option
     "rasterio",
     "requests",
     "rtree",
@@ -63,7 +63,12 @@ dependencies = [
     "typing-extensions",
     "tqdm",
     "utm",
-    "xarray==2023.7.0",
+    "xarray",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest"
 ]
 
 [tool.setuptools_scm]
@@ -94,4 +99,4 @@ download_data = "stormworkflow.prep.download_data:cli"
 setup_ensemble = "stormworkflow.prep.setup_ensemble:cli"
 combine_ensemble = "stormworkflow.post.combine_ensemble:cli"
 analyze_ensemble = "stormworkflow.post.analyze_ensemble:cli"
-storm_roc_curve = "stormworkflow.post.ROC_single_run:cli"
+storm_roc_curve = "stormworkflow.post.storm_roc_curve:cli"

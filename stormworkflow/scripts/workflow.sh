@@ -48,12 +48,15 @@ function init {
     done
 
     logfile=$run_dir/versions.info
+    version $logfile stormworkflow
     version $logfile stormevents
     version $logfile ensembleperturbation
+    version $logfile coupledmodeldriver
+    version $logfile pyschism
     version $logfile ocsmesh
     echo "SCHISM: see solver.version each outputs dir" >> $logfile
 
-    cp $input_file $run_dir/input.yaml
+    cp $input_file $run_dir/input_asis.yaml
 
     echo $run_dir
 }
@@ -74,7 +77,7 @@ hurricane_data \
     --hours-before-landfall "$hr_prelandfall" \
     --lead-times "$L_LEADTIMES_DATASET" \
     --preprocessed-tracks-dir "$L_TRACK_DIR" \
-    --countries-polygon "$L_SHP_DIR/ne_110m_cultural/ne_110m_admin_0_countries.shp" \
+    --rmw-fill "$rmw_fill_method" \
     $storm $year 2>&1 | tee "${run_dir}/output/head_hurricane_data.out"
 
 
@@ -132,8 +135,10 @@ PREP_KWDS+=" --sample-rule $sample_rule"
 PREP_KWDS+=" --date-range-file $run_dir/setup/dates.csv"
 PREP_KWDS+=" --nwm-file $L_NWM_DATASET"
 PREP_KWDS+=" --tpxo-dir $L_TPXO_DATASET"
+PREP_KWDS+=" --variables $perturb_vars"
 if [ $use_wwm == 1 ]; then PREP_KWDS+=" --use-wwm"; fi
 if [ $hydrology == 1 ]; then PREP_KWDS+=" --with-hydrology"; fi
+PREP_KWDS+=" --perturb-features $perturb_features"
 PREP_KWDS+=" --pahm-model $pahm_model"
 export PREP_KWDS
 # NOTE: We need to wait because run jobs depend on perturbation dirs!
@@ -142,7 +147,7 @@ setup_id=$(sbatch \
     --wait \
     --job-name=prep_$tag \
     --parsable \
-    --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year,IMG="$L_IMG_DIR/prep.sif" \
+    --export=ALL,PREP_KWDS,STORM=$storm,YEAR=$year \
     $run_dir/slurm/prep.sbatch \
 )
 
@@ -150,7 +155,6 @@ setup_id=$(sbatch \
 echo "Launching runs"
 SCHISM_SHARED_ENV=""
 SCHISM_SHARED_ENV+="ALL"
-SCHISM_SHARED_ENV+=",IMG=$L_IMG_DIR/solve.sif"
 SCHISM_SHARED_ENV+=",MODULES=$L_SOLVE_MODULES"
 spinup_id=$(sbatch \
     --nodes $hpc_solver_nnodes --ntasks $hpc_solver_ntasks \
@@ -181,5 +185,5 @@ sbatch \
     --output "${run_dir}/output/slurm-%j.post.out" \
     --job-name=post_$tag \
     -d afterok${joblist} \
-    --export=ALL,IMG="$L_IMG_DIR/prep.sif",ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
+    --export=ALL,ENSEMBLE_DIR="$run_dir/setup/ensemble.dir/" \
     $run_dir/slurm/post.sbatch
