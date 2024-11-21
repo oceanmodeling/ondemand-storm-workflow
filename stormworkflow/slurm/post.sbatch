@@ -14,7 +14,7 @@ analyze_ensemble \
     --ensemble-dir $ENSEMBLE_DIR \
     --tracks-dir $ENSEMBLE_DIR/track_files
 
-storm_roc_curve \
+storm_roc_ts_rel_curves \
     --storm ${storm} \
     --year ${year} \
     --leadtime ${hr_prelandfall} \
