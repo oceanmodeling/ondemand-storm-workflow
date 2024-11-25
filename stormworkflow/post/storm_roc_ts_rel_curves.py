@@ -126,6 +126,8 @@ def main(args):
     ensemble_dir = Path(args.ensemble_dir)
     output_directory = args.output_dir
     plot_prob_map = args.plot_prob_map
+    psurge_far_path = args.psurge_far_path
+    psurge_pod_path = args.psurge_pod_path
 
     input_directory = ensemble_dir / 'analyze/linear_k1_p1_n0.025'
     prob_nc_path = input_directory / 'probabilities.nc'
@@ -172,6 +174,14 @@ def main(args):
     blank_arr[:] = np.nan
     obs_true_arr = blank_arr.copy()
     pred_prob_arr = blank_arr.copy()
+
+    # Load Psurge results
+    ds_psurge = None
+    if not (psurge_far_path is None or psurge_pod_path is None):
+        ds_psurge = xr.open_mfdataset(
+            [psurge_far_path, psurge_pod_path],
+            combine='nested',
+        )
 
     # Load probabilities.nc file
     ds_prob = xr.open_dataset(prob_nc_path)
@@ -309,6 +319,27 @@ def main(args):
                 linestyle=linestyle_list[source_count],
                 markersize=5,
             )
+        if ds_psurge is not None and threshold in ds_psurge.threshold:
+            psurge_far = ds_psurge.sel(
+                    version='v3pt0Apr062023_kdtree',
+                    threshold=thresholds,
+                    storm=storm,
+                    leadtime=leadtime).FARate.values
+            psurge_pod = ds_psurge.sel(
+                    version='v3pt0Apr062023_kdtree',
+                    threshold=thresholds,
+                    storm=storm,
+                    leadtime=leadtime).POD.values
+            AUC = abs(np.trapz(psurge_pod, x=psurge_far))
+            label = f'psurge, AUC={AUC:.2f}'
+            plt.plot(
+                psurge_far,
+                psurge_pod,
+                'go',
+                label=label,
+                linestyle=':',
+                markersize=4,
+            )
         plt.legend(loc='lower right')
         npos = int(hit_arr[threshold_count, 0, 0, 0, 0])
         nneg = int(false_alarm_arr[threshold_count, 0, 0, 0, 0])
@@ -438,6 +469,16 @@ def cli():
         help='plot the prediction probability at observations maps',
         default=True,
         action=argparse.BooleanOptionalAction,
+    )
+    parser.add_argument(
+        '--psurge-far-path',
+        help='path to NHC PSurge FAR results',
+        type=Path
+    )
+    parser.add_argument(
+        '--psurge-pod-path',
+        help='path to NHC PSurge POD results',
+        type=Path
     )
 
     main(parser.parse_args())
