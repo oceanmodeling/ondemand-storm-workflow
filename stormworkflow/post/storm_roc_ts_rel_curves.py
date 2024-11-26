@@ -138,6 +138,9 @@ def main(args):
     if leadtime == -1:
         leadtime = 48
 
+    if suffix is None:
+        suffix = ''
+
     # *.nc file coordinates
     thresholds_ft = [3, 4, 5, 6, 9]  # in ft
     thresholds_m = [round(i * 0.3048, 4) for i in thresholds_ft]  # convert to meter
