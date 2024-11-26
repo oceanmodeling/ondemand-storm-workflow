@@ -125,6 +125,7 @@ def main(args):
     obs_df_path = Path(args.obs_df_path)
     ensemble_dir = Path(args.ensemble_dir)
     output_directory = args.output_dir
+    suffix = args.output_suffix
     plot_prob_map = args.plot_prob_map
     psurge_far_path = args.psurge_far_path
     psurge_pod_path = args.psurge_pod_path
@@ -163,8 +164,10 @@ def main(args):
 
     # Load obs file, extract storm obs points and coordinates
     df_obs = pd.read_csv(obs_df_path)
-    Event_name = f'{storm}_{year}'
-    df_obs_storm = df_obs[df_obs.Event == Event_name]
+    # Get first matching name (first landfall)
+    CSV_Event_name = df_obs[df_obs.Event.str.fullmatch(f'{storm}\w*_{year}')].Event.iloc[0]
+    NC_Event_name = CSV_Event_name[:CSV_Event_name.find('_')]
+    df_obs_storm = df_obs[df_obs.Event == CSV_Event_name]
     obs_coordinates = stack_station_coordinates(
         df_obs_storm.Longitude.values, df_obs_storm.Latitude.values
     )
@@ -188,12 +191,6 @@ def main(args):
 
     gdf_countries = gpd.read_file(get_path('naturalearth land'))
 
-    #    gdf_countries = gpd.GeoSeries(
-    #        NaturalEarthFeature(category='physical', scale='10m', name='land',).geometries(),
-    #        crs=4326,
-    #    )
-
-    # Loop through thresholds and sources and find corresponding values from probabilities.nc
     threshold_count = -1
     for threshold in thresholds_m:
         threshold_count += 1
@@ -219,7 +216,7 @@ def main(args):
                     f'Probability of {source} exceeding {thresholds_ft[threshold_count]} ft \n {storm}, {year}, {leadtime}-hr leadtime',
                     os.path.join(
                         output_directory,
-                        f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr.png',
+                        f'prob_{source}_above_{thresholds_ft[threshold_count]}ft_{storm}_{year}_{leadtime}-hr_{suffix}.png',
                     ),
                 )
 
@@ -273,12 +270,12 @@ def main(args):
     )
     ds_ROC.to_netcdf(
         os.path.join(
-            output_directory, f'{storm}_{year}_{leadtime}hr_probabilistic_evaluation_stats.nc'
+            output_directory, f'{storm}_{year}_{leadtime}hr_probabilistic_evaluation_stats_{suffix}.nc'
         )
     )
 
     # plot ROC curves
-    colormarker_list = ['bs', 'kx']
+    colormarker_list = ['bd', 'kx']
     linestyle_list = ['--', '-']
     threshold_count = -1
     for threshold in thresholds_ft:
@@ -308,9 +305,8 @@ def main(args):
                 plt.plot(
                     FAR_arr[threshold_count, 0, 0, source_count, best_res],
                     POD_arr[threshold_count, 0, 0, source_count, best_res],
-                    colormarker_list[source_count],
+                    'kX',
                 )
-                colormarker = colormarker_list[source_count][0]
             plt.plot(
                 FAR_arr[threshold_count, 0, 0, source_count, :],
                 POD_arr[threshold_count, 0, 0, source_count, :],
@@ -322,20 +318,20 @@ def main(args):
         if ds_psurge is not None and threshold in ds_psurge.threshold:
             psurge_far = ds_psurge.sel(
                     version='v3pt0Apr062023_kdtree',
-                    threshold=thresholds,
-                    storm=storm,
+                    threshold=threshold,
+                    storm=NC_Event_name,
                     leadtime=leadtime).FARate.values
             psurge_pod = ds_psurge.sel(
                     version='v3pt0Apr062023_kdtree',
-                    threshold=thresholds,
-                    storm=storm,
+                    threshold=threshold,
+                    storm=NC_Event_name,
                     leadtime=leadtime).POD.values
             AUC = abs(np.trapz(psurge_pod, x=psurge_far))
             label = f'psurge, AUC={AUC:.2f}'
             plt.plot(
                 psurge_far,
                 psurge_pod,
-                'go',
+                'ro',
                 label=label,
                 linestyle=':',
                 markersize=4,
@@ -355,7 +351,7 @@ def main(args):
         plt.savefig(
             os.path.join(
                 output_directory,
-                f'ROC_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
+                f'ROC_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft_{suffix}.png',
             )
         )
         plt.close()
@@ -396,7 +392,7 @@ def main(args):
         plt.savefig(
             os.path.join(
                 output_directory,
-                f'TS_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
+                f'TS_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft_{suffix}.png',
             )
         )
         plt.close()
@@ -441,7 +437,7 @@ def main(args):
         plt.savefig(
             os.path.join(
                 output_directory,
-                f'REL_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft.png',
+                f'REL_{storm}_{year}_{leadtime}hr_leadtime_{threshold}_ft_{suffix}.png',
             )
         )
         plt.close()
@@ -479,6 +475,11 @@ def cli():
         '--psurge-pod-path',
         help='path to NHC PSurge POD results',
         type=Path
+    )
+    parser.add_argument(
+        '--output-suffix',
+        help='prefix to be used for path of output files',
+        type=str
     )
 
     main(parser.parse_args())
