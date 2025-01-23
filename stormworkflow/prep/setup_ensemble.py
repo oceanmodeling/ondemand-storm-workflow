@@ -37,7 +37,8 @@ from shapely import get_coordinates
 from stormevents import StormEvent
 from stormevents.nhc.track import VortexTrack
 
-import stormworkflow.prep.wwm
+import stormworkflow.prep.wwm as wwm
+from importlib.resources import files
 # TODO: Later find a clean way to package this module from SCHISM from
 # src/Utility/Pre-Processing/STOFS-3D-Atl-shadow-VIMS/Pre_processing/Source_sink/Relocate/
 #from relocate_source_feeder import (
@@ -46,7 +47,7 @@ import stormworkflow.prep.wwm
 #)
 
 
-REFS = Path('/refs')
+REFS = files('stormworkflow.refs') #Path('/refs')
 
 
 logger = logging.getLogger(__name__)

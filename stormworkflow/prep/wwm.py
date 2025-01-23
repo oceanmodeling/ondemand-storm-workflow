@@ -9,9 +9,10 @@ from pyschism.mesh.base import Elements
 from pyschism.mesh.base import Gr3
 from pyschism.mesh.gridgr3 import Gr3Field
 from pyschism.param.param import Param
+from importlib.resources import files
 
 
-REFS = Path('/refs')
+REFS = files('stormworkflow.refs') #  Path('/refs')
 
 
 def setup_wwm(mesh_file: Path, setup_dir: Path, ensemble: bool):
