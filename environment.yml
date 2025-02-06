@@ -21,7 +21,7 @@ dependencies:
   - matplotlib
   - mpi4py
   - netcdf4
-  - numpy
+  - numpy>=2
   - numba
   - ocsmesh==1.5.3
   - pandas
