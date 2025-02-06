@@ -28,7 +28,6 @@ dependencies:
   - pip
   - proj
   - pyarrow
-  - pygeos
   - pyproj
   - python<3.12
   - pytz
