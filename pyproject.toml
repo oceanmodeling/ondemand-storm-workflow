@@ -48,7 +48,6 @@ dependencies = [
     "packaging",
     "pandas",
     "pyarrow",
-    "pygeos",
     "pyproj",
     "pyschism>=0.1.15",
     "pytz",
