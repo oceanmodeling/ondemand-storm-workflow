@@ -112,6 +112,8 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
 
     storm_name = None
 
+    full_training_set = True
+
     if log_space:
         output_directory = analyze_dir / f'log_k{k_neighbors}_p{idw_order}_n{mann_coef}'
     else:
@@ -163,14 +165,19 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
         )
     )
 
-    if len(numpy.unique(perturbations['type'][:])) == 1:
+#    if len(numpy.unique(perturbations['type'][:])) == 1:
+    if full_training_set:
+        training_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
+        validation_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
+        LOGGER.info('using all members for training the model')
+    else:
         perturbations['type'][:] = numpy.random.choice(
             ['training', 'validation'], size=len(perturbations.run), p=[0.7, 0.3]
         )
         LOGGER.info('dividing 70/30% for training/testing the model')
 
-    training_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
-    validation_perturbations = perturbations.sel(run=perturbations['type'] == 'validation')
+        training_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
+        validation_perturbations = perturbations.sel(run=perturbations['type'] == 'validation')
 
     if make_perturbations_plot:
         plot_perturbations(
