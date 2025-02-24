@@ -63,7 +63,7 @@ def trackstart_from_file(
 
     storm_all_times = leadtime_table.loc[[nhc_code.lower()]].dropna()
     if len(storm_all_times) > 1:
-        storm_all_times = storm_all_times.iloc[0]
+        storm_all_times = storm_all_times.iloc[[0]]
     if leadtime not in storm_all_times:
         return None
 
