@@ -112,7 +112,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
 
     storm_name = None
 
-    full_training_set = True
+    validate_surrogate_model = False #if True, split 70/30
 
     if log_space:
         output_directory = analyze_dir / f'log_k{k_neighbors}_p{idw_order}_n{mann_coef}'
@@ -166,11 +166,8 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
     )
 
 #    if len(numpy.unique(perturbations['type'][:])) == 1:
-    if full_training_set:
-        training_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
-        validation_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
-        LOGGER.info('using all members for training the model')
-    else:
+
+    if validate_surrogate_model:
         perturbations['type'][:] = numpy.random.choice(
             ['training', 'validation'], size=len(perturbations.run), p=[0.7, 0.3]
         )
@@ -178,6 +175,11 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
 
         training_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
         validation_perturbations = perturbations.sel(run=perturbations['type'] == 'validation')
+    else:
+        training_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
+        validation_perturbations = perturbations.sel(run=perturbations['type'] == 'training')
+        LOGGER.info('using all members for training the model')
+        make_validation_plot = False
 
     if make_perturbations_plot:
         plot_perturbations(
@@ -229,7 +231,8 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
         validation_set = subset.sel(run=validation_perturbations['run'])
 
     LOGGER.info(f'total {training_set.shape} training samples')
-    LOGGER.info(f'total {validation_set.shape} validation samples')
+    if validate_surrogate_model:
+        LOGGER.info(f'total {validation_set.shape} validation samples')
 
     if node_status_mask == 'always_wet':
         training_set_adjusted = training_set.copy(deep=True)
