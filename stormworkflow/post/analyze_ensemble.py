@@ -77,6 +77,8 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
     log_space = False  # use log-scale to keep depths positive
     training_runs = 'korobov'
     validation_runs = 'random'
+    # probabilistic analysis
+    markov_samples = 2000  # default was 10,000
     # PC parameters
     polynomial_order = 3
     # cross_validator = ShuffleSplit(n_splits=10, test_size=12, random_state=666)
@@ -370,6 +372,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
             distribution=distribution,
             training_set=validation_set,
             percentiles=percentiles,
+            sample_size=markov_samples,
             convert_from_log_scale=log_space,
             convert_from_depths=training_depth_adjust.values if log_space else use_depth,
             minimum_allowable_value=min_depth if use_depth else None,
@@ -392,6 +395,7 @@ def _analyze(tracks_dir, analyze_dir, mann_coef):
             surrogate_model=surrogate_model,
             distribution=distribution,
             training_set=validation_set,
+            sample_size=markov_samples,
             minimum_allowable_value=min_depth if use_depth else None,
             convert_from_log_scale=log_space,
             convert_from_depths=training_depth_adjust.values if log_space else use_depth,
