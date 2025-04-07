@@ -82,34 +82,40 @@ hurricane_data \
 
 
 MESH_KWDS=""
-if [ $subset_mesh == 1 ]; then
+if [ $subset_mesh == 0 ]; then
+    echo "Copy high-res mesh..."
+    cp "$L_MESH_HI" $run_dir/mesh/mesh_w_bdry.grd
+
+elif [ $subset_mesh == 1 ]; then
+    echo "Subset mesh..."
     MESH_KWDS+="subset_n_combine"
     MESH_KWDS+=" $L_MESH_HI"
     MESH_KWDS+=" $L_MESH_LO"
     MESH_KWDS+=" ${run_dir}/windswath"
     MESH_KWDS+=" --rasters $L_DEM_LO"
+    MESH_KWDS+=" --out ${run_dir}/mesh"
+
+    export MESH_KWDS
+    sbatch \
+	--output "${run_dir}/output/slurm-%j.mesh.out" \
+	--wait \
+	--export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year \
+	$run_dir/slurm/mesh.sbatch
 else
-    # TODO: Get param_* values from somewhere
-    MESH_KWDS+="hurricane_mesh"
-    MESH_KWDS+=" --hmax $param_mesh_hmax"
-    MESH_KWDS+=" --hmin-low $param_mesh_hmin_low"
-    MESH_KWDS+=" --rate-low $param_mesh_rate_low"
-    MESH_KWDS+=" --transition-elev $param_mesh_trans_elev"
-    MESH_KWDS+=" --hmin-high $param_mesh_hmin_high"
-    MESH_KWDS+=" --rate-high $param_mesh_rate_high"
-    MESH_KWDS+=" --shapes-dir $L_SHP_DIR"
-    MESH_KWDS+=" --windswath ${run_dir}/windswath"
-    MESH_KWDS+=" --lo-dem $L_DEM_LO"
-    MESH_KWDS+=" --hi-dem $L_DEM_HI"
+    echo "InputError! subset_mesh should be 0 or 1"
+    # # TODO: Get param_* values from somewhere
+    # MESH_KWDS+="hurricane_mesh"
+    # MESH_KWDS+=" --hmax $param_mesh_hmax"
+    # MESH_KWDS+=" --hmin-low $param_mesh_hmin_low"
+    # MESH_KWDS+=" --rate-low $param_mesh_rate_low"
+    # MESH_KWDS+=" --transition-elev $param_mesh_trans_elev"
+    # MESH_KWDS+=" --hmin-high $param_mesh_hmin_high"
+    # MESH_KWDS+=" --rate-high $param_mesh_rate_high"
+    # MESH_KWDS+=" --shapes-dir $L_SHP_DIR"
+    # MESH_KWDS+=" --windswath ${run_dir}/windswath"
+    # MESH_KWDS+=" --lo-dem $L_DEM_LO"
+    # MESH_KWDS+=" --hi-dem $L_DEM_HI"
 fi
-MESH_KWDS+=" --out ${run_dir}/mesh"
-export MESH_KWDS
-sbatch \
-    --output "${run_dir}/output/slurm-%j.mesh.out" \
-    --wait \
-    --job-name=mesh_$tag \
-    --export=ALL,MESH_KWDS,STORM=$storm,YEAR=$year \
-    $run_dir/slurm/mesh.sbatch
 
 
 echo "Download necessary data..."
