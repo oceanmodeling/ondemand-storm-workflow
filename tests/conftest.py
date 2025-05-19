@@ -46,3 +46,7 @@ def conf_v0_0_5():
 @pytest.fixture
 def conf_latest():
     return read_conf(input_latest)
+
+@pytest.fixture
+def leadtime_file():
+    return test_refs.joinpath('leadtime.json')
