@@ -25,7 +25,7 @@ dependencies:
   - numba
   - ocsmesh==1.5.3
   - pandas
-  - pip
+  - pip<=25.0.1  # Fix installation issue due yo PyYaml SPDX error
   - proj
   - pyarrow
   - pyproj
