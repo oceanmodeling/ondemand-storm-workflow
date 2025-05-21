@@ -50,20 +50,21 @@ def trackstart_from_file(
         return None
 
     leadtime_dict = pd.read_json(leadtime_file, orient='index')
+    # Sort table by landfall time
     leadtime_table = leadtime_dict.drop(columns='leadtime').merge(
         leadtime_dict.leadtime.apply(
             lambda x: pd.Series({v: k for k, v in x.items()})
         ).apply(pd.to_datetime, format='%Y%m%d%H'),
         left_index=True,
         right_index=True
-    ).set_index('ALnumber')
+    ).set_index('ALnumber').sort_values([0])
 
     if nhc_code.lower() not in leadtime_table.index:
         return None
 
     storm_all_times = leadtime_table.loc[[nhc_code.lower()]].dropna()
     if len(storm_all_times) > 1:
-        storm_all_times = storm_all_times.iloc[0]
+        storm_all_times = storm_all_times.iloc[[0]]
     if leadtime not in storm_all_times:
         return None
 
