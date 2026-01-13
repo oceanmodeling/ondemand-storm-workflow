@@ -6,6 +6,7 @@ import warnings
 from importlib.resources import files
 from argparse import ArgumentParser
 from pathlib import Path
+import sys
 
 import yaml
 from packaging.version import Version
@@ -133,6 +134,25 @@ def main():
     # TODO: Write out the updated config as a yaml file
 
     wf = scripts.joinpath('workflow.sh')
+
+    # Check output directory is writeable and exists
+    output_dir = conf['RUN_OUT']
+    if not output_dir:
+        _logger.error(f"Output directory {output_dir} is not defined in configuration")
+        
+    # convert to absolute path
+    output_dir = os.path.abspath(output_dir)
+    try:
+        os.makedirs(output_dir,exist_ok=True)
+    except Exception as e:
+        _logger.error(f"Can not create output directory {output_dir}: {e}")
+        sys.exit(1)
+    if not os.access(output_dir,os.W_OK):
+        _logger.error(f"Output directory {output_dir} is not writeable")
+        sys.exit(1)
+    
+    # update configurations with absolute path
+    conf['RUN_OUT'] = output_dir
 
     run_env = os.environ.copy()
     run_env['L_SCRIPT_DIR'] = slurm.joinpath('.')
